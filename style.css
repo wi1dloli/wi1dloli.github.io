@@ -1,4 +1,21 @@
-h1 {
-    background-color: rgb(44, 107, 107);
-    opacity: 1;
+body {
+    background-color: #31393C;
+    color: #DDDDDD;
+}
+
+header {
+    background-color: #FDCA40;
+}
+
+a {
+    color: #FDCA40;
+}
+
+a:visited {
+    color: #F79824;
+}
+
+/* This is a class, you make items in the header and such this color */
+.clickable:hover {
+    background-color: #F79824;
 }
