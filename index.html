@@ -1,7 +1,8 @@
 ---
+---
 <!DOCTYPE html>
 <html lang="en">
-<head> {% include heading.html %}
+<head> 
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,24 +10,25 @@
     <title>Weebsite</title>
     <link rel="stylesheet" href='style.css'>
 </head>
----
+
   <body>
+    {% include heading.html %}
     <h1 style="text-align: center;">
       <u>Hello world</u>
     </h1>
   </body>
-  <body2 style="text-align: center;">"this is a work in progress :D"</body2>
-  <body3>
+  <div style="text-align: center;">"this is a work in progress :D"</div>
+  <div>
     <p>Instagram: <a href="https://www.instagram.com/spicygary_/">@spicygary_</a>
       <br>Discord: <a href="https://discordapp.com/users/661067997003251722/">wi1dloli#5800</a>
       <br>Server: <a href="https://discord.gg/bJMC49aGyH">Name?</a>
       <br>Valorant: <a href="https://tracker.gg/valorant/profile/riot/Zekken%20%E7%B5%B6%E5%89%A3%23aqua/overview">Zekken 絶剣#aqua</a> (I suck) <br>Osu!: <a href="https://osu.ppy.sh/users/19730992">Jaydenthebird</a>
     </p>
-  </body3>
+  </div>
   <style>
 .hero-image {
     /* Use "linear-gradient" to add a darken background effect to the image (photographer.jpg). This will make the text easier to read */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://pbs.twimg.com/media/Edw06tqWAAAmsL6.jpg");
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), <img src="{{ 'C:\Users\jayde\Documents\wi1dloli.github.io\images\AF1_ anime.jpg | relative_url }}" id="hero"/>;
   
     /* Set a specific height */
     height: 50%;
