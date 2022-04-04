@@ -32,19 +32,14 @@
   </div>
   <style>
 .hero-image {
-    /* Use "linear-gradient" to add a darken background effect to the image (photographer.jpg). This will make the text easier to read */
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), ; url("{% images/AF1_anime.jpg | relative_url %}")
-  
-    /* Set a specific height */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5), url("{% images/AF1_anime.jpg | relative_url %}"));
     height: 50%;
-  
-    /* Position and center the image to scale nicely on all screens */
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
     position: relative;
-  }
-</style>
+ }
+  </style>
 
   <footer> footer </footer>
 </body>
