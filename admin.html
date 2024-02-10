@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="styles.css">
+        <title>Admin</title>
+    </head>
+    
+    <body>
+        <header id="header">
+        <!-- NOTE: the navbar only works when loading the entire site rather than the file itself. -->
+        <!-- For example https://your-IP-Address:PORT/FILEPATH-->
+        
+            <nav id="navigation-bar">
+                <ul id="navigation-links">
+                    <li class="current">
+                        <a href="/home.html" >Home</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/resume.html" >Resume</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/projects.html" >Projects</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/contact.html" >Contact</a>
+                    </li>
+                    
+                    <li>
+                        <a href="/social.html" >Social</a>
+                    </li>
+                    
+                    <li>
+                       <a href="/admin.html">Admin</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div style="text-align: justify;">
+            <form action="#" method="post">
+                <p>
+                    <label for="user-name">User-Name:</label>
+                    <input type="text" id="user-name" name="user-name" required>
+                </p>
+                <p>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </p>
+                <p style="text-align: justify;">
+                    <input type="submit" value="Login" style="padding: 10px;">
+                </p>
+            </form>
+        </div>
+    </body>
+</html>
