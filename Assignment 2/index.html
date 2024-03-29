@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adopt A-Cat/Dog</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Center the image horizontally */
+        .centered {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="index.html"><img src="logo.png" alt="Adopt A-Cat/Dog"></a>
+        </div>
+        <h1>Adopt A-Cat/Dog</h1>
+        <p id="dateTime"></p>
+    </header>
+    <div class="container">
+        <aside>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="pets.html">Browse Available Pets</a></li>
+                    <li><a href="findpet.html">Find a Dog/Cat</a></li>
+                    <li><a href="dogcare.html">Dog Care</a></li>
+                    <li><a href="catcare.html">Cat Care</a></li>
+                    <li><a href="donate.html">Have a Pet to Give Away</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main>
+            <h2>Welcome to Adopt A-Cat/Dog!</h2>
+            <p>Find your new furry friend with us.</p>
+            <img src="mainpage.png " alt="dog and cat" class="centered">
+        </main>
+    </div>
+    <footer>
+        <a href="#">Privacy/Disclaimer: Your information is safe with us.</a>
+    </footer>
+
+    <script>
+        // Function to update date and time every second
+        function updateTime() {
+            const dateTimeElement = document.getElementById('dateTime');
+            const now = new Date();
+            const dateTimeString = now.toLocaleString();
+            dateTimeElement.textContent = dateTimeString;
+        }
+
+        // Initial call to display date and time
+        updateTime();
+
+        // Set interval to update date and time every second
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
