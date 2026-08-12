@@ -1,40 +1,348 @@
-/* Autocomplete Dropdown List Layout */
-.autocomplete-suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 100;
+:root {
+    --bg-main: #121212;
+    --bg-card: #1e1e1e;
+    --text-main: #ffffff;
+    --text-muted: #aaaaaa;
+    --primary: #3b82f6;
+    --danger: #ef4444;
+    --success: #10b981;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+header h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Master Responsive Layout Split */
+.game-layout {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Fallback to stack elements on mobile screens */
+@media (max-width: 600px) {
+    .game-layout { 
+        grid-template-columns: 1fr; 
+    }
+    .sticky-life { 
+        position: static !important; 
+    }
+}
+
+.card {
+    background-color: var(--bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
-.suggestion-item {
+.compact-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: flex-end;
+}
+
+.input-inline {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-inline input, .input-inline select {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
     padding: 10px;
+    border-radius: 6px;
+    font-size: 1rem;
+    height: 42px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+input {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.btn {
+    border: none;
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
     cursor: pointer;
+    color: white;
+    width: 100%;
+}
+.btn-primary { background-color: var(--primary); }
+
+/* Sticky Life Counter Container */
+.sticky-life {
+    position: sticky;
+    top: 20px;
+}
+
+.life-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #151515;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.life-display {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #ff4757;
+}
+
+.life-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-life {
+    background: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    font-size: 1.5rem;
+    width: 45px;
+    height: 45px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.btn-life:hover { background: #3a3a3a; }
+
+/* Token Grid Structure */
+.token-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 45px 25px; /* Extra vertical space accommodates the tap rotation overlay */
+    padding-top: 10px;
+}
+
+/* Master Token Card Configuration */
+.token-card {
+    background-color: var(--bg-card);
+    border: 3px solid #333;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    min-height: 150px;
+    will-change: transform;
+}
+
+/* MTG Static Border Colors */
+.clr-W { border-color: #f0f2c7; }
+.clr-U { border-color: #0e68ab; }
+.clr-B { border-color: #1c1c1c; }
+.clr-R { border-color: #d32f2f; }
+.clr-G { border-color: #2e7d32; }
+.clr-C { border-color: #757575; }
+
+/* Animated RGB Outer Boundary Setup */
+.token-card.clr-M {
+    border-color: transparent;
+    position: relative;
+    background-color: var(--bg-card);
+    background-clip: padding-box;
+    overflow: hidden;
+}
+
+/* Moving Ring Background Mesh Layer */
+.token-card.clr-M::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        #d32f2f, #f59e0b, #10b981, #0e68ab, #a855f7, #d32f2f
+    );
+    animation: rgb-rotate 4s linear infinite;
+    z-index: 1;
+}
+
+/* Core Face Mask Wall blocking out the background glow center */
+.token-card.clr-M::after {
+    content: '';
+    position: absolute;
+    inset: 3px; /* Controls exact border width thickness */
+    background: var(--bg-card);
+    border-radius: 7px;
+    z-index: 2;
+}
+
+/* Elevate element text structures above background layers */
+.token-card.clr-M > * {
+    position: relative;
+    z-index: 3;
+}
+
+@keyframes rgb-rotate {
+    100% { transform: rotate(360deg); }
+}
+
+/* Performance Isolated Tap Animation States */
+.token-card.tapped {
+    transform: rotate(90deg);
+    opacity: 0.65;
+    box-shadow: none;
+}
+
+.token-card.clr-M.tapped::before {
+    animation: rgb-rotate 4s linear infinite;
+}
+
+.token-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.token-title { 
+    font-weight: bold; 
+    font-size: 1.1rem; 
+}
+
+.btn-delete {
+    background: none;
+    border: none;
+    color: #ff4757;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 5px;
+    z-index: 10;
+}
+
+.token-pt { 
+    font-size: 1.8rem; 
+    margin: 5px 0; 
+    color: #fff; 
+}
+
+.counter-badge { 
+    font-size: 0.85rem; 
+    color: #f59e0b; 
+    font-weight: bold; 
+    margin-bottom: 8px;
+}
+
+.token-controls {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+.btn-sm {
+    flex: 1;
+    padding: 6px;
+    font-size: 0.8rem;
+    background: #333;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 10;
+}
+.btn-sm:hover { background: #444; }
+
+.btn-tap { 
+    background-color: #f59e0b; 
+    color: black; 
+    font-weight: bold; 
+    width: 100%; 
+    border: none; 
+    padding: 7px; 
+    border-radius: 4px; 
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Autocomplete Dropdown List Overlay Layer Styling */
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%; /* Sits exactly below the parent text input element container */
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #2a2a2a; /* Solid contrasting dark gray background */
+    border: 2px solid #444; /* Clean visible boundary lines */
+    border-radius: 6px;
+    max-height: 180px;
+    overflow-y: auto; /* Adds custom scroll functionality for multiple card options */
+    z-index: 999999 !important; /* Force layout layers to render over form cards */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8); /* Thick casting shadows to visually elevate text components */
+}
+
+/* Individual list entries inside the suggestions block container matrix */
+.suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: #ffffff;
     border-bottom: 1px solid #3a3a3a;
     font-size: 0.95rem;
+    text-align: left;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
 }
 
 .suggestion-item:hover {
-    background-color: var(--primary);
+    background-color: var(--primary); /* Highlights item line blue when hovered */
     color: white;
 }
 
-/* Image Art Card Overrides */
+/* Image Card Styles */
 .token-card.has-art {
     background-size: cover;
     background-position: center;
-    min-height: 240px; /* Taller card aspect ratio matches real cards */
+    min-height: 240px; 
     border-color: rgba(0,0,0,0.4);
 }
 
-/* Semi-transparent dark overlay mask so text remains readable over dark art backgrounds */
 .token-card.has-art::before {
     content: '';
     position: absolute;
@@ -44,13 +352,11 @@
     z-index: 1;
 }
 
-/* Force standard card values over image art layer canvases */
 .token-card.has-art > * {
     position: relative;
     z-index: 2;
 }
 
-/* Rules Text Paragraph Block Styling */
 .token-rules {
     font-size: 0.75rem;
     color: #dddddd;
@@ -62,7 +368,6 @@
     text-shadow: 1px 1px 2px black;
 }
 
-/* Allow text parameters for power and toughness input fields (* elements */
 .input-inline input[type="text"] {
     width: 100%;
     box-sizing: border-box;

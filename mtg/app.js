@@ -24,7 +24,6 @@ async function handleNameInput(query) {
     }
 
     try {
-        // Query scryfall autocomplete catalog endpoint
         const response = await fetch(`https://scryfall.com{encodeURIComponent(query)}`);
         const data = await response.json();
         
@@ -60,11 +59,9 @@ async function handleNewToken(event) {
     let imageUrl = '';
     let rulesText = '';
 
-    // Hide autocomplete panel box overlay
     document.getElementById('autocomplete-box').innerHTML = '';
 
     try {
-        // Fetch detailed database structure matching exact card name inputs
         const response = await fetch(`https://scryfall.com{encodeURIComponent(nameInput.value)}`);
         if (response.ok) {
             const cardData = await response.json();
@@ -72,8 +69,8 @@ async function handleNewToken(event) {
             // Extract standard or high-res art asset pipelines
             if (cardData.image_uris) {
                 imageUrl = cardData.image_uris.normal;
-            } else if (cardData.card_faces && cardData.card_faces[0].image_uris) {
-                imageUrl = cardData.card_faces[0].image_uris.normal;
+            } else if (cardData.card_faces && cardData.card_faces.image_uris) {
+                imageUrl = cardData.card_faces.image_uris.normal;
             }
             
             // Extract official ability oracle rules text
