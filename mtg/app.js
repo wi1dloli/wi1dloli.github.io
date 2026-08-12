@@ -721,6 +721,20 @@ function shouldShowPT(token) {
 // RENDER - WITH FALLBACK FOR iOS 9
 // ============================================================
 
+// ============================================================
+// RENDER - NO IMAGES, JUST STYLIZED TOKENS FOR iOS 9
+// ============================================================
+
+// ============================================================
+// RENDER - HYBRID: Images on PC, Fallback on iOS 9
+// ============================================================
+
+// Detect iOS 9
+function isIOS9() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+}
+
 function render() {
     var lifeDisplay = document.getElementById('life-display');
     var grid = document.getElementById('token-grid');
@@ -735,6 +749,9 @@ function render() {
 
     grid.innerHTML = '';
 
+    // Check if we're on iOS 9
+    var iOS9 = isIOS9();
+
     state.tokens.forEach(function(token) {
         var wrapper = document.createElement('div');
         wrapper.className = 'token-wrapper';
@@ -743,119 +760,117 @@ function render() {
 
         var tappedClass = token.tapped ? 'tapped' : '';
 
-        // Set the card class
-        if (token.artUrl) {
-            card.className = 'token-card has-art ' + tappedClass;
-        } else {
-            card.className = 'token-card clr-' + token.color + ' ' + tappedClass;
-        }
+        // Color map for fallback
+        var colorMap = {
+            'W': '#f0f2c7',
+            'U': '#0e68ab',
+            'B': '#1c1c1c',
+            'R': '#d32f2f',
+            'G': '#2e7d32',
+            'C': '#757575',
+            'M': '#2a1a4a'
+        };
+        
+        var textColorMap = {
+            'W': '#000000',
+            'U': '#ffffff',
+            'B': '#ffffff',
+            'R': '#ffffff',
+            'G': '#ffffff',
+            'C': '#ffffff',
+            'M': '#ffffff'
+        };
 
-        // Build the card content
-        var ptDisplay = '';
-
-        if (shouldShowPT(token)) {
-            var power = getDisplayedStat(token.pow, token.counters);
-            var toughness = getDisplayedStat(token.tou, token.counters);
-
-            if (power !== '' && toughness !== '') {
-                ptDisplay = '<div class="token-pt">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
-            }
-        }
-
-        var artifactBadge = '';
-        if (token.isArtifact && !token.isArtifactCreature) {
-            artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
-        }
-
-        // Create the card HTML
-        var cardHTML = 
-            '<div class="token-header">' +
-                '<span class="token-title">' + escapeHtml(token.name) + '</span>' +
-                '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">' +
-                    '✕' +
-                '</button>' +
-            '</div>' +
-            ptDisplay +
-            artifactBadge +
-            '<div class="token-rules">' + escapeHtml(token.rules || '') + '</div>' +
-            '<div class="counter-badge">' + token.counters + ' Counters</div>' +
-            '<div class="token-controls">' +
-                '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '">-1</button>' +
-                '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '">+1</button>' +
-            '</div>' +
-            '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '">' +
-                (token.tapped ? 'UNTAP' : 'TAP') +
-            '</button>';
-
-        // If there's an image, add it as an img tag
-        if (token.artUrl) {
-            // Color-coded fallback background
-            var colorMap = {
-                'W': '#f0f2c7',
-                'U': '#0e68ab',
-                'B': '#1c1c1c',
-                'R': '#d32f2f',
-                'G': '#2e7d32',
-                'C': '#757575',
-                'M': '#2a1a4a'
-            };
-            
+        // If on iOS 9 OR no image URL, use fallback
+        if (iOS9 || !token.artUrl) {
+            // --- FALLBACK MODE (iOS 9 or no image) ---
             var bgColor = colorMap[token.color] || '#1a1a2e';
+            var textColor = textColorMap[token.color] || '#ffffff';
+
+            card.className = 'token-card has-art ' + tappedClass;
+            card.style.backgroundColor = bgColor;
             
-            // Add the image as a background element
-            var imgWrapper = document.createElement('div');
-            imgWrapper.className = 'token-image-wrapper';
-            imgWrapper.style.backgroundColor = bgColor;
-            
-            var img = document.createElement('img');
-            img.className = 'token-image';
-            img.src = token.artUrl;
-            img.alt = token.name;
-            img.setAttribute('crossOrigin', 'anonymous');
-            img.setAttribute('referrerPolicy', 'no-referrer');
-            
-            // Add error handler for when image fails - show fallback with token info
-            img.onerror = function() {
-                // Hide the broken image
-                this.style.display = 'none';
-                // Show a fallback with token name and color
-                var fallback = document.createElement('div');
-                fallback.className = 'token-fallback';
-                fallback.style.backgroundColor = bgColor;
-                fallback.style.color = '#fff';
-                fallback.style.display = 'flex';
-                fallback.style.alignItems = 'center';
-                fallback.style.justifyContent = 'center';
-                fallback.style.flexDirection = 'column';
-                fallback.style.width = '100%';
-                fallback.style.height = '100%';
-                fallback.style.position = 'absolute';
-                fallback.style.top = '0';
-                fallback.style.left = '0';
-                fallback.style.zIndex = '1';
-                fallback.style.fontSize = '2rem';
-                fallback.style.fontWeight = 'bold';
-                fallback.style.textShadow = '0 0 20px rgba(0,0,0,0.8)';
-                
-                // Show first letter of token name
-                var firstLetter = token.name.charAt(0).toUpperCase();
-                fallback.innerHTML = '<div style="font-size:3rem;opacity:0.8;">' + firstLetter + '</div><div style="font-size:0.7rem;opacity:0.6;">' + token.name + '</div>';
-                
-                // Insert fallback after the image
-                this.parentNode.appendChild(fallback);
-            };
-            
-            imgWrapper.appendChild(img);
-            
-            // Create content wrapper
-            var contentWrapper = document.createElement('div');
-            contentWrapper.className = 'token-content';
-            contentWrapper.innerHTML = cardHTML;
-            
-            card.appendChild(imgWrapper);
-            card.appendChild(contentWrapper);
+            // Gradient overlay
+            var gradientStyle = 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.4) 100%)';
+            if (token.color === 'W') {
+                gradientStyle = 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(200,200,200,0.1) 100%)';
+            }
+            card.style.backgroundImage = gradientStyle;
+
+            // Build card content
+            var ptDisplay = '';
+            if (shouldShowPT(token)) {
+                var power = getDisplayedStat(token.pow, token.counters);
+                var toughness = getDisplayedStat(token.tou, token.counters);
+                if (power !== '' && toughness !== '') {
+                    ptDisplay = '<div class="token-pt" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
+                }
+            }
+
+            var artifactBadge = '';
+            if (token.isArtifact && !token.isArtifactCreature) {
+                artifactBadge = '<div class="artifact-badge" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">⚙️ Artifact</div>';
+            }
+
+            card.innerHTML = 
+                '<div class="token-header">' +
+                    '<span class="token-title" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.6);">' + escapeHtml(token.name) + '</span>' +
+                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">✕</button>' +
+                '</div>' +
+                '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">' +
+                    '<div style="font-size:4rem;font-weight:bold;color:' + textColor + ';opacity:0.3;text-shadow:0 0 30px rgba(0,0,0,0.5);">' + token.name.charAt(0).toUpperCase() + '</div>' +
+                '</div>' +
+                ptDisplay +
+                artifactBadge +
+                '<div class="token-rules" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + escapeHtml(token.rules || '') + '</div>' +
+                '<div class="counter-badge" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + token.counters + ' Counters</div>' +
+                '<div class="token-controls">' +
+                    '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="background:rgba(255,255,255,0.2);color:' + textColor + ';">-1</button>' +
+                    '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="background:rgba(255,255,255,0.2);color:' + textColor + ';">+1</button>' +
+                '</div>' +
+                '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';">' +
+                    (token.tapped ? 'UNTAP' : 'TAP') +
+                '</button>';
+
         } else {
-            card.innerHTML = cardHTML;
+            // --- IMAGE MODE (PC and modern devices) ---
+            card.className = 'token-card has-art ' + tappedClass;
+            
+            // Add the image as background
+            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
+            card.style.backgroundColor = '#1a1a2e';
+            
+            // Build the content overlay
+            var ptDisplay = '';
+            if (shouldShowPT(token)) {
+                var power = getDisplayedStat(token.pow, token.counters);
+                var toughness = getDisplayedStat(token.tou, token.counters);
+                if (power !== '' && toughness !== '') {
+                    ptDisplay = '<div class="token-pt">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
+                }
+            }
+
+            var artifactBadge = '';
+            if (token.isArtifact && !token.isArtifactCreature) {
+                artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
+            }
+
+            card.innerHTML = 
+                '<div class="token-header">' +
+                    '<span class="token-title">' + escapeHtml(token.name) + '</span>' +
+                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">✕</button>' +
+                '</div>' +
+                ptDisplay +
+                artifactBadge +
+                '<div class="token-rules">' + escapeHtml(token.rules || '') + '</div>' +
+                '<div class="counter-badge">' + token.counters + ' Counters</div>' +
+                '<div class="token-controls">' +
+                    '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '">-1</button>' +
+                    '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '">+1</button>' +
+                '</div>' +
+                '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '">' +
+                    (token.tapped ? 'UNTAP' : 'TAP') +
+                '</button>';
         }
 
         wrapper.appendChild(card);
