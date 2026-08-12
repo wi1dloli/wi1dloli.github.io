@@ -1,7 +1,7 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
 // Token-only + single-faced + artifact-aware Scryfall search
-// iOS 9.3.5 Compatible
+// iOS 9.3.5 Compatible - WITH FULL ATTRIBUTES
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -130,7 +130,6 @@ function isSingleFacedToken(card) {
         return false;
     }
 
-    // Double-faced cards are excluded.
     if (Array.isArray(card.card_faces)) {
         return false;
     }
@@ -161,16 +160,16 @@ function isArtifactCreatureToken(card) {
     }
 
     var typeLine = card.type_line || '';
-    // Check if it's both an Artifact and a Creature
     return /\bArtifact\b/i.test(typeLine) && /\bCreature\b/i.test(typeLine);
 }
 
 // ============================================================
-// SCRYFALL AUTOCOMPLETE
+// SCRYFALL AUTOCOMPLETE - WITH ATTRIBUTES
 // ============================================================
 
 var autocompleteTimer = null;
 var autocompleteRequest = 0;
+var cachedTokenResults = [];
 
 function handleNameInput(query) {
     var box = document.getElementById('autocomplete-box');
@@ -185,6 +184,7 @@ function handleNameInput(query) {
 
     if (query.length < 2) {
         box.innerHTML = '';
+        cachedTokenResults = [];
         return;
     }
 
@@ -193,7 +193,7 @@ function handleNameInput(query) {
 
         try {
             var searchQuery = 't:token name:' + query + '*';
-            var url = SCRYFALL_API + '/cards/search?q=' + encodeURIComponent(searchQuery);
+            var url = SCRYFALL_API + '/cards/search?q=' + encodeURIComponent(searchQuery) + '&unique=cards';
 
             fetch(url)
                 .then(function(response) {
@@ -210,37 +210,64 @@ function handleNameInput(query) {
                     box.innerHTML = '';
 
                     if (!Array.isArray(data.data)) {
+                        cachedTokenResults = [];
                         return;
                     }
 
-                    var validTokens = data.data.filter(function(card) {
+                    // Store all valid tokens for later use
+                    cachedTokenResults = data.data.filter(function(card) {
                         return isSingleFacedToken(card);
                     });
 
-                    var names = [];
-                    for (var i = 0; i < validTokens.length; i++) {
-                        var name = validTokens[i].name;
-                        if (name && names.indexOf(name) === -1) {
-                            names.push(name);
-                        }
+                    if (cachedTokenResults.length === 0) {
+                        box.innerHTML = '<div class="suggestion-item" style="color:#888;cursor:default;">No tokens found</div>';
+                        return;
                     }
 
-                    names.forEach(function(name) {
-                        var suggestion = document.createElement('div');
-                        suggestion.className = 'suggestion-item';
-                        suggestion.textContent = name;
-
-                        suggestion.addEventListener('click', function() {
-                            selectSuggestion(name);
-                        });
-
-                        box.appendChild(suggestion);
+                    // Group by name to show variations
+                    var groupedTokens = {};
+                    cachedTokenResults.forEach(function(card) {
+                        var name = card.name;
+                        if (!groupedTokens[name]) {
+                            groupedTokens[name] = [];
+                        }
+                        groupedTokens[name].push(card);
                     });
+
+                    // Show each variation with full details
+                    var names = Object.keys(groupedTokens);
+                    names.forEach(function(name) {
+                        var cards = groupedTokens[name];
+                        
+                        if (cards.length === 1) {
+                            // Single version - show with full details
+                            var card = cards[0];
+                            var suggestion = document.createElement('div');
+                            suggestion.className = 'suggestion-item';
+                            suggestion.innerHTML = formatSuggestionHTML(card);
+                            suggestion.addEventListener('click', function() {
+                                selectToken(card);
+                            });
+                            box.appendChild(suggestion);
+                        } else {
+                            // Multiple versions - show all with P/T differences highlighted
+                            cards.forEach(function(card) {
+                                var suggestion = document.createElement('div');
+                                suggestion.className = 'suggestion-item suggestion-variant';
+                                suggestion.innerHTML = formatSuggestionHTML(card);
+                                suggestion.addEventListener('click', function() {
+                                    selectToken(card);
+                                });
+                                box.appendChild(suggestion);
+                            });
+                        }
+                    });
+
                 })
                 .catch(function(error) {
                     console.error('Token autocomplete error:', error);
                     if (requestNumber === autocompleteRequest) {
-                        box.innerHTML = '';
+                        box.innerHTML = '<div class="suggestion-item" style="color:#888;cursor:default;">Error loading tokens</div>';
                     }
                 });
 
@@ -254,19 +281,169 @@ function handleNameInput(query) {
 }
 
 // ============================================================
-// SELECT AUTOCOMPLETE SUGGESTION
+// FORMAT SUGGESTION HTML - WITH FULL ATTRIBUTES
 // ============================================================
 
-function selectSuggestion(name) {
+function formatSuggestionHTML(card) {
+    var name = card.name || '';
+    var typeLine = card.type_line || '';
+    var power = card.power || '';
+    var toughness = card.toughness || '';
+    var oracleText = card.oracle_text || '';
+    var manaCost = card.mana_cost || '';
+    
+    // Build the display HTML
+    var html = '';
+    
+    // Token name with mana cost if present
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span style="font-weight:bold;font-size:1.05rem;">' + name + '</span>';
+    if (manaCost) {
+        html += '<span style="color:#f59e0b;font-size:0.8rem;">' + manaCost + '</span>';
+    }
+    html += '</div>';
+    
+    // Type line with color coding
+    var typeDisplay = typeLine.replace(/Token/g, '').trim();
+    if (typeDisplay) {
+        var typeColor = '#888';
+        if (typeDisplay.indexOf('Creature') !== -1) typeColor = '#4CAF50';
+        if (typeDisplay.indexOf('Artifact') !== -1) typeColor = '#FF9800';
+        if (typeDisplay.indexOf('Enchantment') !== -1) typeColor = '#9C27B0';
+        if (typeDisplay.indexOf('Land') !== -1) typeColor = '#795548';
+        if (typeDisplay.indexOf('Instant') !== -1 || typeDisplay.indexOf('Sorcery') !== -1) typeColor = '#F44336';
+        
+        html += '<div style="color:' + typeColor + ';font-size:0.8rem;margin:2px 0;">' + typeDisplay + '</div>';
+    }
+    
+    // P/T with big emphasis
+    if (power && toughness) {
+        html += '<div style="color:#f59e0b;font-weight:bold;font-size:1.2rem;margin:2px 0;">' + power + '/' + toughness + '</div>';
+    }
+    
+    // Attributes/Abilities (Lifelink, Trample, Flying, etc.)
+    if (oracleText) {
+        // Extract keywords from oracle text
+        var keywords = extractKeywords(oracleText);
+        
+        if (keywords.length > 0) {
+            html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin:3px 0;">';
+            keywords.forEach(function(keyword) {
+                html += '<span style="background:#2a2a2a;color:#4FC3F7;padding:1px 6px;border-radius:3px;font-size:0.65rem;border:1px solid #333;">' + keyword + '</span>';
+            });
+            html += '</div>';
+        }
+        
+        // Show a preview of the oracle text (truncated)
+        var previewText = oracleText;
+        if (previewText.length > 60) {
+            previewText = previewText.substring(0, 60) + '...';
+        }
+        html += '<div style="color:#aaa;font-size:0.7rem;font-style:italic;margin:2px 0;line-height:1.2;">' + previewText + '</div>';
+    }
+    
+    // Artifact indicator
+    if (isArtifactToken(card)) {
+        var isCreature = card.type_line && card.type_line.indexOf('Creature') !== -1;
+        var icon = isCreature ? '⚙️ Artifact Creature' : '⚙️ Artifact';
+        html += '<div style="color:#FF9800;font-size:0.65rem;margin-top:2px;">' + icon + '</div>';
+    }
+    
+    return html;
+}
+
+// ============================================================
+// EXTRACT KEYWORDS FROM ORACLE TEXT
+// ============================================================
+
+function extractKeywords(text) {
+    if (!text) return [];
+    
+    var keywordList = [
+        'Flying', 'First Strike', 'Double Strike', 'Deathtouch', 
+        'Haste', 'Hexproof', 'Indestructible', 'Lifelink', 
+        'Menace', 'Reach', 'Trample', 'Vigilance', 
+        'Defender', 'Flash', 'Ward', 'Protection',
+        'Skulk', 'Prowess', 'Enchant', 'Equip',
+        'Crew', 'Surveil', 'Surveil', 'Dredge',
+        'Escape', 'Companion', 'Mutate', 'Partner',
+        'Undying', 'Persist', 'Unleash', 'Evolve'
+    ];
+    
+    var found = [];
+    var textUpper = text.toUpperCase();
+    
+    keywordList.forEach(function(keyword) {
+        // Check for whole word match
+        var regex = new RegExp('\\b' + keyword + '\\b', 'i');
+        if (regex.test(text) && found.indexOf(keyword) === -1) {
+            found.push(keyword);
+        }
+    });
+    
+    // Also check for "Whenever" triggers and "At the beginning" triggers
+    if (/\bwhenever\b/i.test(text)) {
+        found.push('Trigger');
+    }
+    if (/at the beginning/i.test(text)) {
+        found.push('Trigger');
+    }
+    if (/\bcreatures you control\b/i.test(text)) {
+        found.push('Anthem');
+    }
+    if (/\bsacrifice\b/i.test(text)) {
+        found.push('Sacrifice');
+    }
+    if (/\btap\b/i.test(text) && !/\buntap\b/i.test(text)) {
+        found.push('Tap');
+    }
+    
+    return found.slice(0, 6); // Limit to 6 keywords for display
+}
+
+// ============================================================
+// SELECT TOKEN FROM SUGGESTION
+// ============================================================
+
+function selectToken(card) {
     var input = document.getElementById('token-name');
     var box = document.getElementById('autocomplete-box');
+    var powInput = document.getElementById('token-pow');
+    var touInput = document.getElementById('token-tou');
 
     if (input) {
-        input.value = name;
+        input.value = card.name;
     }
+
+    // Auto-fill P/T if it's a creature
+    if (card.power && card.toughness) {
+        if (powInput) {
+            powInput.value = card.power;
+        }
+        if (touInput) {
+            touInput.value = card.toughness;
+        }
+    } else {
+        // Non-creature artifacts - clear P/T
+        if (powInput) {
+            powInput.value = '';
+        }
+        if (touInput) {
+            touInput.value = '';
+        }
+    }
+
+    // Store the selected card for when the form is submitted
+    window._selectedTokenCard = card;
 
     if (box) {
         box.innerHTML = '';
+    }
+    
+    // Auto-submit the form
+    var form = document.getElementById('token-form');
+    if (form) {
+        form.dispatchEvent(new Event('submit'));
     }
 }
 
@@ -351,6 +528,10 @@ function getCardImage(card) {
         return '';
     }
 
+    if (card.image_uris && card.image_uris.small) {
+        return card.image_uris.small;
+    }
+    
     if (card.image_uris && card.image_uris.normal) {
         return card.image_uris.normal;
     }
@@ -379,7 +560,7 @@ function getCardPower(card) {
         return null;
     }
 
-    if (card.power !== undefined) {
+    if (card.power !== undefined && card.power !== null) {
         return card.power;
     }
 
@@ -395,7 +576,7 @@ function getCardToughness(card) {
         return null;
     }
 
-    if (card.toughness !== undefined) {
+    if (card.toughness !== undefined && card.toughness !== null) {
         return card.toughness;
     }
 
@@ -446,91 +627,112 @@ function handleNewToken(event) {
     var isArtifact = false;
     var isArtifactCreature = false;
 
-    // Scryfall lookup
-    findToken(name)
-        .then(function(card) {
-            if (card) {
-                imageUrl = getCardImage(card);
-                rulesText = getCardRules(card);
-                isArtifact = isArtifactToken(card);
-                isArtifactCreature = isArtifactCreatureToken(card);
-
-                // Only replace P/T for creatures (including artifact creatures)
-                // Non-creature artifacts should keep their P/T fields empty
-                if (!isArtifact || isArtifactCreature) {
-                    var scryfallPower = getCardPower(card);
-                    var scryfallToughness = getCardToughness(card);
-
-                    if (scryfallPower !== null && scryfallPower !== undefined) {
-                        power = String(scryfallPower);
-                    }
-
-                    if (scryfallToughness !== null && scryfallToughness !== undefined) {
-                        toughness = String(scryfallToughness);
-                    }
-                } else {
-                    // Non-creature artifacts - clear P/T
-                    power = '';
-                    toughness = '';
-                }
-            }
-
-            // Create tokens
-            for (var i = 0; i < quantity; i++) {
-                state.tokens.push({
-                    id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
-                    name: name,
-                    pow: power,
-                    tou: toughness,
-                    color: colorInput.value,
-                    counters: 0,
-                    tapped: false,
-                    artUrl: imageUrl,
-                    rules: rulesText,
-                    isArtifact: isArtifact,
-                    isArtifactCreature: isArtifactCreature
-                });
-            }
-
-            // Reset form
-            nameInput.value = '';
-            powInput.value = '1';
-            touInput.value = '1';
-            qtyInput.value = '1';
-            colorInput.value = 'M';
-
-            saveToStorage();
-            render();
-        })
-        .catch(function(error) {
-            console.error('Scryfall token lookup failed:', error);
-
-            // Still create tokens even if lookup fails
-            for (var i = 0; i < quantity; i++) {
-                state.tokens.push({
-                    id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
-                    name: name,
-                    pow: power,
-                    tou: toughness,
-                    color: colorInput.value,
-                    counters: 0,
-                    tapped: false,
-                    artUrl: '',
-                    rules: '',
-                    isArtifact: false,
-                    isArtifactCreature: false
-                });
-            }
-
-            nameInput.value = '';
-            powInput.value = '1';
-            touInput.value = '1';
-            qtyInput.value = '1';
-            colorInput.value = 'M';
-
-            saveToStorage();
-            render();
+    // Check if we have a selected card from autocomplete
+    var selectedCard = window._selectedTokenCard || null;
+    
+    // If we have a selected card, use it directly
+    if (selectedCard && selectedCard.name === name) {
+        processTokenCard(selectedCard, function(card) {
+            createTokensFromCard(card, name, quantity, colorInput, powInput, touInput, autocompleteBox);
         });
+    } else {
+        // Otherwise do a Scryfall lookup
+        findToken(name)
+            .then(function(card) {
+                processTokenCard(card, function(processedCard) {
+                    createTokensFromCard(processedCard, name, quantity, colorInput, powInput, touInput, autocompleteBox);
+                });
+            })
+            .catch(function(error) {
+                console.error('Scryfall token lookup failed:', error);
+                createTokensFromCard(null, name, quantity, colorInput, powInput, touInput, autocompleteBox);
+            });
+    }
+}
+
+// ============================================================
+// PROCESS TOKEN CARD
+// ============================================================
+
+function processTokenCard(card, callback) {
+    if (card) {
+        callback(card);
+    } else {
+        callback(null);
+    }
+}
+
+// ============================================================
+// CREATE TOKENS FROM CARD
+// ============================================================
+
+function createTokensFromCard(card, name, quantity, colorInput, powInput, touInput, autocompleteBox) {
+    var imageUrl = '';
+    var rulesText = '';
+    var power = powInput.value.trim() || '1';
+    var toughness = touInput.value.trim() || '1';
+    var isArtifact = false;
+    var isArtifactCreature = false;
+
+    if (card) {
+        imageUrl = getCardImage(card);
+        rulesText = getCardRules(card);
+        isArtifact = isArtifactToken(card);
+        isArtifactCreature = isArtifactCreatureToken(card);
+
+        // Only replace P/T for creatures (including artifact creatures)
+        if (!isArtifact || isArtifactCreature) {
+            var scryfallPower = getCardPower(card);
+            var scryfallToughness = getCardToughness(card);
+
+            if (scryfallPower !== null && scryfallPower !== undefined) {
+                power = String(scryfallPower);
+                if (powInput) powInput.value = power;
+            }
+
+            if (scryfallToughness !== null && scryfallToughness !== undefined) {
+                toughness = String(scryfallToughness);
+                if (touInput) touInput.value = toughness;
+            }
+        } else {
+            // Non-creature artifacts - clear P/T
+            power = '';
+            toughness = '';
+            if (powInput) powInput.value = '';
+            if (touInput) touInput.value = '';
+        }
+    }
+
+    // Create tokens
+    for (var i = 0; i < quantity; i++) {
+        state.tokens.push({
+            id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
+            name: name,
+            pow: power,
+            tou: toughness,
+            color: colorInput.value,
+            counters: 0,
+            tapped: false,
+            artUrl: imageUrl,
+            rules: rulesText,
+            isArtifact: isArtifact,
+            isArtifactCreature: isArtifactCreature
+        });
+    }
+
+    // Reset form
+    var nameInput = document.getElementById('token-name');
+    if (nameInput) nameInput.value = '';
+    if (powInput) powInput.value = '1';
+    if (touInput) touInput.value = '1';
+    if (document.getElementById('token-qty-input')) document.getElementById('token-qty-input').value = '1';
+    if (colorInput) colorInput.value = 'M';
+    if (autocompleteBox) autocompleteBox.innerHTML = '';
+    
+    window._selectedTokenCard = null;
+
+    saveToStorage();
+    render();
 }
 
 // ============================================================
@@ -616,19 +818,11 @@ function getDisplayedStat(baseValue, counters) {
 // ============================================================
 
 function shouldShowPT(token) {
-    // Show P/T if:
-    // 1. It's NOT an artifact, OR
-    // 2. It IS an artifact creature
-    // Hide P/T if it's a non-creature artifact
     return !token.isArtifact || token.isArtifactCreature;
 }
 
 // ============================================================
 // RENDER
-// ============================================================
-
-// ============================================================
-// RENDER - UPDATED WITH WRAPPER
 // ============================================================
 
 function render() {
@@ -646,7 +840,6 @@ function render() {
     grid.innerHTML = '';
 
     state.tokens.forEach(function(token) {
-        // Create wrapper for proper tap rotation spacing
         var wrapper = document.createElement('div');
         wrapper.className = 'token-wrapper';
         
@@ -664,7 +857,6 @@ function render() {
 
         var ptDisplay = '';
 
-        // Only show P/T if it's a creature or non-artifact
         if (shouldShowPT(token)) {
             var power = getDisplayedStat(token.pow, token.counters);
             var toughness = getDisplayedStat(token.tou, token.counters);
@@ -674,7 +866,6 @@ function render() {
             }
         }
 
-        // Add artifact badge for non-creature artifacts
         var artifactBadge = '';
         if (token.isArtifact && !token.isArtifactCreature) {
             artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
@@ -755,6 +946,7 @@ function handleDocumentClick(event) {
     }
 
     box.innerHTML = '';
+    window._selectedTokenCard = null;
 }
 
 // ============================================================
@@ -770,6 +962,7 @@ function handleNameKeydown(event) {
 
     if (box) {
         box.innerHTML = '';
+        window._selectedTokenCard = null;
     }
 }
 
