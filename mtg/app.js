@@ -735,6 +735,16 @@ function isIOS9() {
     return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
 }
 
+// ============================================================
+// RENDER - WITH MTG CARD FRAME STYLE FALLBACK
+// ============================================================
+
+// Detect iOS 9
+function isIOS9() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+}
+
 function render() {
     var lifeDisplay = document.getElementById('life-display');
     var grid = document.getElementById('token-grid');
@@ -749,7 +759,6 @@ function render() {
 
     grid.innerHTML = '';
 
-    // Check if we're on iOS 9
     var iOS9 = isIOS9();
 
     state.tokens.forEach(function(token) {
@@ -760,87 +769,91 @@ function render() {
 
         var tappedClass = token.tapped ? 'tapped' : '';
 
-        // Color map for fallback
+        // Color map for fallback - MTG colors
         var colorMap = {
-            'W': '#f0f2c7',
-            'U': '#0e68ab',
-            'B': '#1c1c1c',
-            'R': '#d32f2f',
-            'G': '#2e7d32',
-            'C': '#757575',
-            'M': '#2a1a4a'
-        };
-        
-        var textColorMap = {
-            'W': '#000000',
-            'U': '#ffffff',
-            'B': '#ffffff',
-            'R': '#ffffff',
-            'G': '#ffffff',
-            'C': '#ffffff',
-            'M': '#ffffff'
+            'W': { bg: '#f5f0dc', text: '#000000', border: '#d4c9a8', accent: '#f5e6b8' },
+            'U': { bg: '#0e4b7a', text: '#ffffff', border: '#0a3a5e', accent: '#1a6a9a' },
+            'B': { bg: '#1a1a1a', text: '#ffffff', border: '#0d0d0d', accent: '#2a2a2a' },
+            'R': { bg: '#8b1a1a', text: '#ffffff', border: '#6a1414', accent: '#aa2a2a' },
+            'G': { bg: '#1a5a1a', text: '#ffffff', border: '#144a14', accent: '#2a7a2a' },
+            'C': { bg: '#4a4a4a', text: '#ffffff', border: '#3a3a3a', accent: '#5a5a5a' },
+            'M': { bg: '#2a1a4a', text: '#ffffff', border: '#1a0a3a', accent: '#4a2a6a' }
         };
 
         // If on iOS 9 OR no image URL, use fallback
         if (iOS9 || !token.artUrl) {
-            // --- FALLBACK MODE (iOS 9 or no image) ---
-            var bgColor = colorMap[token.color] || '#1a1a2e';
-            var textColor = textColorMap[token.color] || '#ffffff';
+            var colors = colorMap[token.color] || colorMap['C'];
+            var bgColor = colors.bg;
+            var textColor = colors.text;
+            var borderColor = colors.border;
+            var accentColor = colors.accent;
 
-            card.className = 'token-card has-art ' + tappedClass;
+            card.className = 'token-card fallback-card ' + tappedClass;
             card.style.backgroundColor = bgColor;
-            
-            // Gradient overlay
-            var gradientStyle = 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.4) 100%)';
-            if (token.color === 'W') {
-                gradientStyle = 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(200,200,200,0.1) 100%)';
-            }
-            card.style.backgroundImage = gradientStyle;
+            card.style.borderColor = borderColor;
+            card.style.borderWidth = '3px';
+            card.style.borderStyle = 'solid';
+            card.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.3), 0 4px 15px rgba(0,0,0,0.5)';
 
-            // Build card content
+            // Build P/T
             var ptDisplay = '';
             if (shouldShowPT(token)) {
                 var power = getDisplayedStat(token.pow, token.counters);
                 var toughness = getDisplayedStat(token.tou, token.counters);
                 if (power !== '' && toughness !== '') {
-                    ptDisplay = '<div class="token-pt" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
+                    ptDisplay = '<div class="token-pt" style="color:' + textColor + ';background:rgba(0,0,0,0.3);padding:2px 12px;border-radius:4px;display:inline-block;">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
                 }
             }
 
             var artifactBadge = '';
             if (token.isArtifact && !token.isArtifactCreature) {
-                artifactBadge = '<div class="artifact-badge" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">⚙️ Artifact</div>';
+                artifactBadge = '<div class="artifact-badge" style="color:' + textColor + ';opacity:0.7;">⚙️ Artifact</div>';
+            }
+
+            // Token type line
+            var typeLine = token.isArtifact ? 'Artifact Token' : 'Token Creature';
+            if (token.isArtifact && token.isArtifactCreature) {
+                typeLine = 'Artifact Creature Token';
             }
 
             card.innerHTML = 
-                '<div class="token-header">' +
-                    '<span class="token-title" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.6);">' + escapeHtml(token.name) + '</span>' +
-                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">✕</button>' +
+                // Top bar with name and delete
+                '<div class="token-header" style="border-bottom:2px solid ' + borderColor + ';padding-bottom:4px;">' +
+                    '<span class="token-title" style="color:' + textColor + ';font-size:0.95rem;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);">' + escapeHtml(token.name) + '</span>' +
+                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" style="color:#ff6b6b;font-size:1.2rem;background:none;border:none;cursor:pointer;">✕</button>' +
                 '</div>' +
-                '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">' +
-                    '<div style="font-size:4rem;font-weight:bold;color:' + textColor + ';opacity:0.3;text-shadow:0 0 30px rgba(0,0,0,0.5);">' + token.name.charAt(0).toUpperCase() + '</div>' +
+                // Center - Big mana symbol style letter
+                '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 0;">' +
+                    '<div style="font-size:4.5rem;font-weight:bold;color:' + textColor + ';opacity:0.25;text-shadow:0 0 40px rgba(255,255,255,0.1);font-family:serif;">' + token.name.charAt(0).toUpperCase() + '</div>' +
+                    '<div style="font-size:0.65rem;color:' + textColor + ';opacity:0.5;letter-spacing:1px;text-transform:uppercase;">' + typeLine + '</div>' +
                 '</div>' +
-                ptDisplay +
-                artifactBadge +
-                '<div class="token-rules" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + escapeHtml(token.rules || '') + '</div>' +
-                '<div class="counter-badge" style="color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.5);">' + token.counters + ' Counters</div>' +
-                '<div class="token-controls">' +
-                    '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="background:rgba(255,255,255,0.2);color:' + textColor + ';">-1</button>' +
-                    '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="background:rgba(255,255,255,0.2);color:' + textColor + ';">+1</button>' +
-                '</div>' +
-                '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';">' +
-                    (token.tapped ? 'UNTAP' : 'TAP') +
-                '</button>';
+                // Bottom section with P/T, counters, buttons
+                '<div style="border-top:2px solid ' + borderColor + ';padding-top:4px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0;">' +
+                        '<div style="flex:1;text-align:center;">' + ptDisplay + '</div>' +
+                        '<div style="flex:1;text-align:center;">' + artifactBadge + '</div>' +
+                    '</div>' +
+                    '<div class="token-rules" style="color:' + textColor + ';opacity:0.7;font-size:0.6rem;font-style:italic;text-align:center;margin:2px 0;">' + escapeHtml(token.rules || '') + '</div>' +
+                    '<div class="counter-badge" style="color:' + textColor + ';text-align:center;font-size:0.7rem;font-weight:bold;margin:2px 0;">' + token.counters + ' Counters</div>' +
+                    '<div class="token-controls" style="display:flex;gap:4px;margin:2px 0;">' +
+                        '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:3px;font-size:0.7rem;background:rgba(255,255,255,0.15);border:1px solid ' + borderColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;">-1</button>' +
+                        '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:3px;font-size:0.7rem;background:rgba(255,255,255,0.15);border:1px solid ' + borderColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;">+1</button>' +
+                    '</div>' +
+                    '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="width:100%;padding:4px;margin-top:2px;border:none;border-radius:4px;font-size:0.7rem;font-weight:bold;background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';cursor:pointer;">' +
+                        (token.tapped ? 'UNTAP' : 'TAP') +
+                    '</button>' +
+                '</div>';
 
         } else {
             // --- IMAGE MODE (PC and modern devices) ---
             card.className = 'token-card has-art ' + tappedClass;
-            
-            // Add the image as background
             card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
             card.style.backgroundColor = '#1a1a2e';
-            
-            // Build the content overlay
+            card.style.padding = '10px 8px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.justifyContent = 'space-between';
+
             var ptDisplay = '';
             if (shouldShowPT(token)) {
                 var power = getDisplayedStat(token.pow, token.counters);
@@ -858,7 +871,7 @@ function render() {
             card.innerHTML = 
                 '<div class="token-header">' +
                     '<span class="token-title">' + escapeHtml(token.name) + '</span>' +
-                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">✕</button>' +
+                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '">✕</button>' +
                 '</div>' +
                 ptDisplay +
                 artifactBadge +
