@@ -1,7 +1,7 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
 // Token-only + single-faced + artifact-aware Scryfall search
-// iOS 9.3.5 Compatible - WITH IMAGE FIXES FOR iPAD
+// iOS 9.3.5 Compatible - FIXED TOKEN CREATION
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -164,18 +164,18 @@ function isArtifactCreatureToken(card) {
 }
 
 // ============================================================
-// IMAGE HANDLING - FIXED FOR iOS 9.3.5
+// IMAGE HANDLING - FIXED
 // ============================================================
+
+var imageCache = {};
 
 function getCardImage(card) {
     if (!card) {
         return '';
     }
 
-    // iOS 9.3.5 fix: Try multiple image sizes
     var imageUrls = [];
     
-    // Try PNG first (better compatibility with older iOS)
     if (card.image_uris) {
         if (card.image_uris.png) {
             imageUrls.push(card.image_uris.png);
@@ -194,7 +194,6 @@ function getCardImage(card) {
         }
     }
 
-    // Also check card faces (for MDFC tokens)
     if (card.card_faces && Array.isArray(card.card_faces)) {
         card.card_faces.forEach(function(face) {
             if (face.image_uris) {
@@ -214,64 +213,16 @@ function getCardImage(card) {
         });
     }
 
-    // Return the first available image
     return imageUrls.length > 0 ? imageUrls[0] : '';
 }
-
-// ============================================================
-// TEST IMAGE ON iOS
-// ============================================================
 
 function isIOS9() {
     var ua = navigator.userAgent;
     return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
 }
 
-function loadImageWithFallback(url, callback) {
-    if (!url) {
-        callback(false);
-        return;
-    }
-
-    // For iOS 9, try using a proxy or alternative URL
-    var img = new Image();
-    var timeout = setTimeout(function() {
-        callback(false);
-    }, 5000);
-
-    img.onload = function() {
-        clearTimeout(timeout);
-        callback(true);
-    };
-
-    img.onerror = function() {
-        clearTimeout(timeout);
-        // Try with no-cors mode as fallback
-        try {
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.responseType = 'blob';
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    callback(true);
-                } else {
-                    callback(false);
-                }
-            };
-            xhr.onerror = function() {
-                callback(false);
-            };
-            xhr.send();
-        } catch (e) {
-            callback(false);
-        }
-    };
-
-    img.src = url;
-}
-
 // ============================================================
-// SCRYFALL AUTOCOMPLETE - WITH ATTRIBUTES
+// SCRYFALL AUTOCOMPLETE
 // ============================================================
 
 var autocompleteTimer = null;
@@ -321,7 +272,6 @@ function handleNameInput(query) {
                         return;
                     }
 
-                    // Store all valid tokens for later use
                     cachedTokenResults = data.data.filter(function(card) {
                         return isSingleFacedToken(card);
                     });
@@ -331,7 +281,6 @@ function handleNameInput(query) {
                         return;
                     }
 
-                    // Group by name to show variations
                     var groupedTokens = {};
                     cachedTokenResults.forEach(function(card) {
                         var name = card.name;
@@ -341,7 +290,6 @@ function handleNameInput(query) {
                         groupedTokens[name].push(card);
                     });
 
-                    // Show each variation with full details
                     var names = Object.keys(groupedTokens);
                     names.forEach(function(name) {
                         var cards = groupedTokens[name];
@@ -386,7 +334,7 @@ function handleNameInput(query) {
 }
 
 // ============================================================
-// FORMAT SUGGESTION HTML - WITH FULL ATTRIBUTES
+// FORMAT SUGGESTION HTML
 // ============================================================
 
 function formatSuggestionHTML(card) {
@@ -399,7 +347,6 @@ function formatSuggestionHTML(card) {
     
     var html = '';
     
-    // Token name with mana cost if present
     html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
     html += '<span style="font-weight:bold;font-size:1.05rem;">' + name + '</span>';
     if (manaCost) {
@@ -407,7 +354,6 @@ function formatSuggestionHTML(card) {
     }
     html += '</div>';
     
-    // Type line with color coding
     var typeDisplay = typeLine.replace(/Token/g, '').trim();
     if (typeDisplay) {
         var typeColor = '#888';
@@ -420,12 +366,10 @@ function formatSuggestionHTML(card) {
         html += '<div style="color:' + typeColor + ';font-size:0.8rem;margin:2px 0;">' + typeDisplay + '</div>';
     }
     
-    // P/T with big emphasis
     if (power && toughness) {
         html += '<div style="color:#f59e0b;font-weight:bold;font-size:1.2rem;margin:2px 0;">' + power + '/' + toughness + '</div>';
     }
     
-    // Attributes/Abilities
     if (oracleText) {
         var keywords = extractKeywords(oracleText);
         
@@ -444,7 +388,6 @@ function formatSuggestionHTML(card) {
         html += '<div style="color:#aaa;font-size:0.7rem;font-style:italic;margin:2px 0;line-height:1.2;">' + previewText + '</div>';
     }
     
-    // Artifact indicator
     if (isArtifactToken(card)) {
         var isCreature = card.type_line && card.type_line.indexOf('Creature') !== -1;
         var icon = isCreature ? '⚙️ Artifact Creature' : '⚙️ Artifact';
@@ -455,7 +398,7 @@ function formatSuggestionHTML(card) {
 }
 
 // ============================================================
-// EXTRACT KEYWORDS FROM ORACLE TEXT
+// EXTRACT KEYWORDS
 // ============================================================
 
 function extractKeywords(text) {
@@ -473,7 +416,6 @@ function extractKeywords(text) {
     ];
     
     var found = [];
-    var textUpper = text.toUpperCase();
     
     keywordList.forEach(function(keyword) {
         var regex = new RegExp('\\b' + keyword + '\\b', 'i');
@@ -502,7 +444,7 @@ function extractKeywords(text) {
 }
 
 // ============================================================
-// SELECT TOKEN FROM SUGGESTION
+// SELECT TOKEN
 // ============================================================
 
 function selectToken(card) {
@@ -694,42 +636,21 @@ function handleNewToken(event) {
         autocompleteBox.innerHTML = '';
     }
 
-    var imageUrl = '';
-    var rulesText = '';
-    var power = powInput.value.trim() || '1';
-    var toughness = touInput.value.trim() || '1';
-    var isArtifact = false;
-    var isArtifactCreature = false;
-
     var selectedCard = window._selectedTokenCard || null;
     
     if (selectedCard && selectedCard.name === name) {
-        processTokenCard(selectedCard, function(card) {
-            createTokensFromCard(card, name, quantity, colorInput, powInput, touInput, autocompleteBox);
-        });
+        // Use the selected card directly
+        createTokensFromCard(selectedCard, name, quantity, colorInput, powInput, touInput);
     } else {
+        // Look up the token
         findToken(name)
             .then(function(card) {
-                processTokenCard(card, function(processedCard) {
-                    createTokensFromCard(processedCard, name, quantity, colorInput, powInput, touInput, autocompleteBox);
-                });
+                createTokensFromCard(card, name, quantity, colorInput, powInput, touInput);
             })
             .catch(function(error) {
                 console.error('Scryfall token lookup failed:', error);
-                createTokensFromCard(null, name, quantity, colorInput, powInput, touInput, autocompleteBox);
+                createTokensFromCard(null, name, quantity, colorInput, powInput, touInput);
             });
-    }
-}
-
-// ============================================================
-// PROCESS TOKEN CARD
-// ============================================================
-
-function processTokenCard(card, callback) {
-    if (card) {
-        callback(card);
-    } else {
-        callback(null);
     }
 }
 
@@ -737,7 +658,7 @@ function processTokenCard(card, callback) {
 // CREATE TOKENS FROM CARD
 // ============================================================
 
-function createTokensFromCard(card, name, quantity, colorInput, powInput, touInput, autocompleteBox) {
+function createTokensFromCard(card, name, quantity, colorInput, powInput, touInput) {
     var imageUrl = '';
     var rulesText = '';
     var power = powInput.value.trim() || '1';
@@ -750,13 +671,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         rulesText = getCardRules(card);
         isArtifact = isArtifactToken(card);
         isArtifactCreature = isArtifactCreatureToken(card);
-
-        // iOS 9 fix: Try to load image and fallback if needed
-        if (imageUrl && isIOS9()) {
-            // For iOS 9, we'll use a simpler approach - just store the URL
-            // and let the CSS handle it with a fallback
-            console.log('iOS 9 detected, using image URL directly');
-        }
 
         if (!isArtifact || isArtifactCreature) {
             var scryfallPower = getCardPower(card);
@@ -779,6 +693,7 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         }
     }
 
+    // Create tokens
     for (var i = 0; i < quantity; i++) {
         state.tokens.push({
             id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
@@ -795,13 +710,13 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         });
     }
 
+    // Reset form
     var nameInput = document.getElementById('token-name');
     if (nameInput) nameInput.value = '';
     if (powInput) powInput.value = '1';
     if (touInput) touInput.value = '1';
     if (document.getElementById('token-qty-input')) document.getElementById('token-qty-input').value = '1';
     if (colorInput) colorInput.value = 'M';
-    if (autocompleteBox) autocompleteBox.innerHTML = '';
     
     window._selectedTokenCard = null;
 
@@ -923,13 +838,8 @@ function render() {
 
         if (token.artUrl) {
             card.className = 'token-card has-art ' + tappedClass;
-            // iOS 9 fix: Use image with cache busting
-            var imgUrl = token.artUrl;
-            // Add a cache buster to prevent iOS 9 from caching broken images
-            if (isIOS9()) {
-                imgUrl = imgUrl + '?v=' + Date.now();
-            }
-            card.style.backgroundImage = 'url(' + JSON.stringify(imgUrl) + ')';
+            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
+            card.style.backgroundColor = '#1a1a2e';
         } else {
             card.className = 'token-card clr-' + token.color + ' ' + tappedClass;
             card.style.backgroundImage = 'none';

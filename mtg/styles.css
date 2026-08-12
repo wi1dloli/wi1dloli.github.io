@@ -1,6 +1,6 @@
 /* ============================================================
    WI1DTRACK - STYLES
-   iOS 9.3.5 Compatible - FULLY FIXED
+   iOS 9.3.5 Compatible - COMPLETE VERSION
    ============================================================ */
 
 :root {
@@ -9,8 +9,6 @@
     --text-main: #ffffff;
     --text-muted: #aaaaaa;
     --primary: #3b82f6;
-    --danger: #ef4444;
-    --success: #10b981;
 }
 
 * {
@@ -34,7 +32,10 @@ header h1 {
     font-size: 2rem;
 }
 
-/* Master Responsive Layout */
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
 .game-layout {
     display: -webkit-box;
     display: -webkit-flex;
@@ -75,6 +76,10 @@ header h1 {
     }
 }
 
+/* ============================================================
+   CARDS
+   ============================================================ */
+
 .card {
     background-color: var(--bg-card);
     padding: 20px;
@@ -89,6 +94,10 @@ header h1 {
     margin-bottom: 15px;
     font-size: 1.2rem;
 }
+
+/* ============================================================
+   FORM
+   ============================================================ */
 
 .compact-row {
     display: -webkit-box;
@@ -209,7 +218,10 @@ input[type="number"]::-webkit-outer-spin-button {
     background-color: #2563eb;
 }
 
-/* Life Counter */
+/* ============================================================
+   LIFE COUNTER
+   ============================================================ */
+
 .sticky-life {
     position: -webkit-sticky;
     position: sticky;
@@ -270,7 +282,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ============================================================
-   TOKEN GRID - FIXED
+   TOKEN GRID
    ============================================================ */
 
 .token-grid {
@@ -289,7 +301,6 @@ input[type="number"]::-webkit-outer-spin-button {
     justify-content: flex-start;
 }
 
-/* Token wrapper for tap rotation */
 .token-wrapper {
     display: inline-block;
     -webkit-flex-shrink: 0;
@@ -304,7 +315,10 @@ input[type="number"]::-webkit-outer-spin-button {
     transition: all 0.3s ease;
 }
 
-/* Token Card - MTG Aspect Ratio */
+/* ============================================================
+   TOKEN CARD
+   ============================================================ */
+
 .token-card {
     background-color: var(--bg-card);
     border: 3px solid #333;
@@ -339,7 +353,6 @@ input[type="number"]::-webkit-outer-spin-button {
     backface-visibility: hidden;
 }
 
-/* Tapped state */
 .token-card.tapped {
     -webkit-transform: rotate(90deg);
     transform: rotate(90deg);
@@ -410,7 +423,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ============================================================
-   TOKEN CARD INTERIOR - FIXED SPACING
+   TOKEN CARD INTERIOR
    ============================================================ */
 
 .token-header {
@@ -643,10 +656,9 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ============================================================
-   RESPONSIVE SIZING
+   RESPONSIVE
    ============================================================ */
 
-/* iPad and tablets */
 @media (max-width: 1024px) {
     .token-card {
         width: 130px;
@@ -672,7 +684,6 @@ input[type="number"]::-webkit-outer-spin-button {
     }
 }
 
-/* Small screens and phones */
 @media (max-width: 600px) {
     .token-card {
         width: 110px;
@@ -734,7 +745,6 @@ input[type="number"]::-webkit-inner-spin-button {
     margin: 0;
 }
 
-/* Hardware acceleration */
 .token-card.clr-M {
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
