@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTG Tracker</title>
+    <title>wi1dtrack - MTG Game Tracker</title>
+    <!-- Links to your styles.css sheet file -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,20 +12,26 @@
         <h1>wi1dtrack</h1>
     </header>
 
+    <!-- Master Two-Column Grid Layout Layout Wrapper -->
     <div class="game-layout">
         
-        <!-- LEFT COLUMN: Token Management -->
+        <!-- LEFT COLUMN: Token Builder and Display Board Grid -->
         <div class="left-col">
             <div class="card form-card">
                 <h2>Create Tokens</h2>
                 <form id="token-form" onsubmit="handleNewToken(event)" autocomplete="off">
+                    
+                    <!-- Token name container with explicit position layout for suggestions -->
                     <div class="form-group" style="position: relative;">
                         <label for="token-name">Token Name</label>
+                        <!-- FIXED: Restored the oninput event handler link to run your API logic script -->
                         <input type="text" id="token-name" placeholder="e.g., Soldier, Zombie, Treasure" required oninput="handleNameInput(this.value)">
-                        <!-- Live API Suggestion Box -->
+                        
+                        <!-- Floating Autocomplete Suggestions Panel Box -->
                         <div id="autocomplete-box" class="autocomplete-suggestions"></div>
                     </div>
                     
+                    <!-- Inline row handling smaller statistic configurations -->
                     <div class="compact-row">
                         <div class="input-inline">
                             <label for="token-pow">PWR</label>
@@ -60,7 +67,7 @@
             <div id="token-grid" class="token-grid"></div>
         </div>
 
-        <!-- RIGHT COLUMN: Life Total Panel -->
+        <!-- RIGHT COLUMN: Sticky Side Panel Game Counters -->
         <div class="right-col">
             <div class="card life-card sticky-life">
                 <h2>Life</h2>
@@ -76,6 +83,7 @@
 
     </div>
 
+    <!-- Script connection to your interactive gameplay logic sheet -->
     <script src="app.js"></script>
 </body>
 </html>

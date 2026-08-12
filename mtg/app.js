@@ -1,200 +1,1088 @@
-let state = JSON.parse(localStorage.getItem('mtg_state')) || {
-    lifeTotal: 40,
-    tokens: [] 
-};
+// ============================================================
+// WI1DTRACK - MTG GAME TRACKER
+// Token-only + single-faced Scryfall search
+// ============================================================
+
+const STORAGE_KEY = 'mtg_state';
+const SCRYFALL_API = 'https://api.scryfall.com';
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let state = loadState();
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+
+        if (!saved) {
+            return {
+                lifeTotal: 40,
+                tokens: []
+            };
+        }
+
+        const parsed = JSON.parse(saved);
+
+        return {
+            lifeTotal:
+                typeof parsed.lifeTotal === 'number'
+                    ? parsed.lifeTotal
+                    : 40,
+
+            tokens:
+                Array.isArray(parsed.tokens)
+                    ? parsed.tokens
+                    : []
+        };
+
+    } catch (error) {
+        console.error(
+            'Could not load saved game state:',
+            error
+        );
+
+        return {
+            lifeTotal: 40,
+            tokens: []
+        };
+    }
+}
+
 
 function saveToStorage() {
-    localStorage.setItem('mtg_state', JSON.stringify(state));
+    try {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(state)
+        );
+    } catch (error) {
+        console.error(
+            'Could not save game state:',
+            error
+        );
+    }
 }
+
+
+// ============================================================
+// LIFE
+// ============================================================
 
 function adjustLife(amount) {
     state.lifeTotal += amount;
+
     saveToStorage();
     render();
 }
 
-// --- SCRYFALL API ASYNC WORKFLOW ---
 
-// 1. Live input listener for autocomplete suggestions
+// ============================================================
+// TOKEN VALIDATION
+// ============================================================
+
+/*
+ * Returns true when the Scryfall card is a single-faced token.
+ *
+ * Cards with card_faces are double-faced/modal cards, so they
+ * are excluded from the token picker.
+ */
+function isSingleFacedToken(card) {
+    if (!card) {
+        return false;
+    }
+
+    // Must be a token.
+    if (card.layout === 'token') {
+        return true;
+    }
+
+    /*
+     * Some Scryfall token objects can have other layouts.
+     * If the card explicitly has multiple faces, reject it.
+     */
+    if (Array.isArray(card.card_faces)) {
+        return false;
+    }
+
+    /*
+     * Some token-related Scryfall objects may not expose the
+     * layout exactly as "token", so allow a normal single-faced
+     * card returned from a t:token search.
+     */
+    return true;
+}
+
+
+// ============================================================
+// SCRYFALL AUTOCOMPLETE
+// ============================================================
+
+let autocompleteTimer = null;
+let autocompleteRequest = 0;
+
+
 async function handleNameInput(query) {
-    const box = document.getElementById('autocomplete-box');
-    if (!query || query.length < 2) {
+    const box =
+        document.getElementById(
+            'autocomplete-box'
+        );
+
+    if (!box) {
+        return;
+    }
+
+    clearTimeout(autocompleteTimer);
+
+    query = query.trim();
+
+    if (query.length < 2) {
         box.innerHTML = '';
         return;
     }
 
-    try {
-        const response = await fetch(`https://scryfall.com{encodeURIComponent(query)}`);
-        const data = await response.json();
-        
-        if (data.data && data.data.length > 0) {
-            box.innerHTML = data.data.map(name => `
-                <div class="suggestion-item" onclick="selectSuggestion('${name.replace(/'/g, "\\'")}')">${name}</div>
-            `).join('');
-        } else {
+
+    autocompleteTimer = setTimeout(async () => {
+        const requestNumber =
+            ++autocompleteRequest;
+
+        try {
+            /*
+             * Search specifically for tokens whose names begin
+             * with the user's input.
+             */
+            const searchQuery =
+                `t:token name:${query}*`;
+
+            const url =
+                `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
+
+            const response =
+                await fetch(url);
+
+            if (!response.ok) {
+                throw new Error(
+                    `Scryfall token search returned HTTP ${response.status}`
+                );
+            }
+
+            const data =
+                await response.json();
+
+
+            // Ignore an older request.
+            if (
+                requestNumber !== autocompleteRequest
+            ) {
+                return;
+            }
+
+
             box.innerHTML = '';
+
+
+            if (!Array.isArray(data.data)) {
+                return;
+            }
+
+
+            /*
+             * Only keep single-faced tokens.
+             *
+             * This removes things such as:
+             *
+             * Dinosaur // Treasure
+             *
+             * and other cards with card_faces.
+             */
+            const validTokens =
+                data.data.filter(
+                    card => isSingleFacedToken(card)
+                );
+
+
+            /*
+             * Remove duplicate names.
+             */
+            const names = [
+                ...new Set(
+                    validTokens
+                        .map(card => card.name)
+                        .filter(Boolean)
+                )
+            ];
+
+
+            names.forEach(name => {
+                const suggestion =
+                    document.createElement('div');
+
+                suggestion.className =
+                    'suggestion-item';
+
+                suggestion.textContent =
+                    name;
+
+                suggestion.addEventListener(
+                    'click',
+                    () => {
+                        selectSuggestion(name);
+                    }
+                );
+
+                box.appendChild(suggestion);
+            });
+
+        } catch (error) {
+            console.error(
+                'Token autocomplete error:',
+                error
+            );
+
+            if (
+                requestNumber === autocompleteRequest
+            ) {
+                box.innerHTML = '';
+            }
         }
-    } catch (err) {
-        console.error("Autocomplete error:", err);
+
+    }, 250);
+}
+
+
+// ============================================================
+// SELECT AUTOCOMPLETE SUGGESTION
+// ============================================================
+
+function selectSuggestion(name) {
+    const input =
+        document.getElementById(
+            'token-name'
+        );
+
+    const box =
+        document.getElementById(
+            'autocomplete-box'
+        );
+
+
+    if (input) {
+        input.value = name;
+    }
+
+
+    if (box) {
+        box.innerHTML = '';
     }
 }
 
-// 2. Event function when clicking a dropdown selection option
-function selectSuggestion(name) {
-    document.getElementById('token-name').value = name;
-    document.getElementById('autocomplete-box').innerHTML = '';
+
+// ============================================================
+// FIND SINGLE-FACED TOKEN
+// ============================================================
+
+async function findToken(tokenName) {
+    const name =
+        tokenName.trim();
+
+    if (!name) {
+        return null;
+    }
+
+
+    // --------------------------------------------------------
+    // Exact token search
+    // --------------------------------------------------------
+
+    try {
+        const searchQuery =
+            `!"${name}" t:token`;
+
+        const url =
+            `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
+
+        const response =
+            await fetch(url);
+
+
+        if (response.ok) {
+            const data =
+                await response.json();
+
+
+            if (Array.isArray(data.data)) {
+                /*
+                 * Find the first result that is actually a
+                 * single-faced token.
+                 */
+                const token =
+                    data.data.find(
+                        card => isSingleFacedToken(card)
+                    );
+
+
+                if (token) {
+                    return token;
+                }
+            }
+        }
+
+    } catch (error) {
+        console.warn(
+            'Exact token lookup failed:',
+            error
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Fuzzy token search
+    // --------------------------------------------------------
+
+    try {
+        const searchQuery =
+            `${name} t:token`;
+
+        const url =
+            `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
+
+        const response =
+            await fetch(url);
+
+
+        if (response.ok) {
+            const data =
+                await response.json();
+
+
+            if (Array.isArray(data.data)) {
+                const token =
+                    data.data.find(
+                        card => isSingleFacedToken(card)
+                    );
+
+
+                if (token) {
+                    return token;
+                }
+            }
+        }
+
+    } catch (error) {
+        console.warn(
+            'Fuzzy token lookup failed:',
+            error
+        );
+    }
+
+
+    return null;
 }
 
-// 3. Central submit callback execution logic interceptor
+
+// ============================================================
+// CARD IMAGE
+// ============================================================
+
+function getCardImage(card) {
+    if (!card) {
+        return '';
+    }
+
+
+    /*
+     * We intentionally do not use card_faces here because
+     * double-faced tokens are excluded.
+     */
+    if (card.image_uris?.normal) {
+        return card.image_uris.normal;
+    }
+
+
+    return '';
+}
+
+
+// ============================================================
+// CARD RULES
+// ============================================================
+
+function getCardRules(card) {
+    if (!card) {
+        return '';
+    }
+
+
+    /*
+     * Single-faced only.
+     */
+    return card.oracle_text || '';
+}
+
+
+// ============================================================
+// CARD POWER
+// ============================================================
+
+function getCardPower(card) {
+    if (!card) {
+        return null;
+    }
+
+
+    if (card.power !== undefined) {
+        return card.power;
+    }
+
+
+    return null;
+}
+
+
+// ============================================================
+// CARD TOUGHNESS
+// ============================================================
+
+function getCardToughness(card) {
+    if (!card) {
+        return null;
+    }
+
+
+    if (card.toughness !== undefined) {
+        return card.toughness;
+    }
+
+
+    return null;
+}
+
+
+// ============================================================
+// CREATE TOKENS
+// ============================================================
+
 async function handleNewToken(event) {
     event.preventDefault();
-    
-    const nameInput = document.getElementById('token-name');
-    const powInput = document.getElementById('token-pow');
-    const touInput = document.getElementById('token-tou');
-    const qtyInput = document.getElementById('token-qty-input');
-    const colorInput = document.getElementById('token-color');
 
-    const amountToCreate = parseInt(qtyInput.value);
+
+    const nameInput =
+        document.getElementById(
+            'token-name'
+        );
+
+    const powInput =
+        document.getElementById(
+            'token-pow'
+        );
+
+    const touInput =
+        document.getElementById(
+            'token-tou'
+        );
+
+    const qtyInput =
+        document.getElementById(
+            'token-qty-input'
+        );
+
+    const colorInput =
+        document.getElementById(
+            'token-color'
+        );
+
+    const autocompleteBox =
+        document.getElementById(
+            'autocomplete-box'
+        );
+
+
+    if (
+        !nameInput ||
+        !powInput ||
+        !touInput ||
+        !qtyInput ||
+        !colorInput
+    ) {
+        console.error(
+            'Token form elements are missing.'
+        );
+
+        return;
+    }
+
+
+    const name =
+        nameInput.value.trim();
+
+
+    if (!name) {
+        return;
+    }
+
+
+    let quantity =
+        parseInt(
+            qtyInput.value,
+            10
+        );
+
+
+    if (
+        !Number.isFinite(quantity) ||
+        quantity < 1
+    ) {
+        quantity = 1;
+    }
+
+
+    // Prevent accidental mass creation.
+    quantity =
+        Math.min(quantity, 100);
+
+
+    if (autocompleteBox) {
+        autocompleteBox.innerHTML = '';
+    }
+
+
     let imageUrl = '';
     let rulesText = '';
 
-    document.getElementById('autocomplete-box').innerHTML = '';
+    let power =
+        powInput.value.trim() || '1';
+
+    let toughness =
+        touInput.value.trim() || '1';
+
+
+    // --------------------------------------------------------
+    // Find token in Scryfall
+    // --------------------------------------------------------
 
     try {
-        const response = await fetch(`https://scryfall.com{encodeURIComponent(nameInput.value)}`);
-        if (response.ok) {
-            const cardData = await response.json();
-            
-            // Extract standard or high-res art asset pipelines
-            if (cardData.image_uris) {
-                imageUrl = cardData.image_uris.normal;
-            } else if (cardData.card_faces && cardData.card_faces.image_uris) {
-                imageUrl = cardData.card_faces.image_uris.normal;
+        const card =
+            await findToken(name);
+
+
+        if (card) {
+            imageUrl =
+                getCardImage(card);
+
+            rulesText =
+                getCardRules(card);
+
+
+            const scryfallPower =
+                getCardPower(card);
+
+            const scryfallToughness =
+                getCardToughness(card);
+
+
+            if (scryfallPower !== null) {
+                power =
+                    String(scryfallPower);
             }
-            
-            // Extract official ability oracle rules text
-            rulesText = cardData.oracle_text || '';
-            
-            // Sync default oracle metrics if user hasn't overwritten fields manually
-            if (cardData.power !== undefined) powInput.value = cardData.power;
-            if (cardData.toughness !== undefined) touInput.value = cardData.toughness;
+
+
+            if (scryfallToughness !== null) {
+                toughness =
+                    String(scryfallToughness);
+            }
         }
-    } catch (err) {
-        console.log("Not a standard card or offline network mode, skipping art pipeline.");
+
+    } catch (error) {
+        console.error(
+            'Scryfall token lookup failed:',
+            error
+        );
     }
 
-    for (let i = 0; i < amountToCreate; i++) {
-        const uniqueId = `${Date.now()}-${i}-${Math.random()}`;
-        
-        const newToken = {
-            id: uniqueId,
-            name: nameInput.value,
-            pow: powInput.value, // Keep as text to support '*' stats
-            tou: touInput.value,
-            color: colorInput.value,
-            counters: 0, 
+
+    // --------------------------------------------------------
+    // Create tokens
+    // --------------------------------------------------------
+
+    for (let i = 0; i < quantity; i++) {
+        state.tokens.push({
+            id:
+                `${Date.now()}-${i}-${Math.random()
+                    .toString(36)
+                    .slice(2)}`,
+
+            name: name,
+
+            pow: power,
+
+            tou: toughness,
+
+            color:
+                colorInput.value,
+
+            counters: 0,
+
             tapped: false,
-            artUrl: imageUrl,    // Save API artwork link directly
-            rules: rulesText     // Save API text string
-        };
-        state.tokens.push(newToken);
+
+            artUrl: imageUrl,
+
+            rules: rulesText
+        });
     }
-    
+
+
+    // --------------------------------------------------------
+    // Reset form
+    // --------------------------------------------------------
+
     nameInput.value = '';
+
     powInput.value = '1';
+
     touInput.value = '1';
+
     qtyInput.value = '1';
+
     colorInput.value = 'M';
 
+
     saveToStorage();
+
     render();
 }
+
+
+// ============================================================
+// TOKEN COUNTERS
+// ============================================================
 
 function adjustCounters(id, amount) {
-    const token = state.tokens.find(t => t.id === id);
-    if (token) {
-        token.counters += amount;
-        saveToStorage();
-        render();
-    }
-}
+    const token =
+        state.tokens.find(
+            token => token.id === id
+        );
 
-function toggleTap(id) {
-    const token = state.tokens.find(t => t.id === id);
-    if (token) {
-        token.tapped = !token.tapped;
-        saveToStorage();
-        render();
-    }
-}
 
-function deleteToken(id) {
-    state.tokens = state.tokens.filter(t => t.id !== id);
+    if (!token) {
+        return;
+    }
+
+
+    token.counters += amount;
+
     saveToStorage();
+
     render();
 }
 
-// 4. UI Interface Sync Loop compiler
-function render() {
-    document.getElementById('life-display').textContent = state.lifeTotal;
 
-    const grid = document.getElementById('token-grid');
-    grid.innerHTML = ''; 
+// ============================================================
+// TAP / UNTAP
+// ============================================================
+
+function toggleTap(id) {
+    const token =
+        state.tokens.find(
+            token => token.id === id
+        );
+
+
+    if (!token) {
+        return;
+    }
+
+
+    token.tapped =
+        !token.tapped;
+
+
+    saveToStorage();
+
+    render();
+}
+
+
+// ============================================================
+// DELETE TOKEN
+// ============================================================
+
+function deleteToken(id) {
+    state.tokens =
+        state.tokens.filter(
+            token => token.id !== id
+        );
+
+
+    saveToStorage();
+
+    render();
+}
+
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+
+// ============================================================
+// DISPLAY P/T
+// ============================================================
+
+function getDisplayedStat(
+    baseValue,
+    counters
+) {
+    const value =
+        String(baseValue ?? '');
+
+
+    /*
+     * Numeric values receive counters.
+     * Non-numeric values remain unchanged.
+     */
+
+    if (/^-?\d+$/.test(value)) {
+        return (
+            Number(value) +
+            counters
+        );
+    }
+
+
+    return value;
+}
+
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function render() {
+    const lifeDisplay =
+        document.getElementById(
+            'life-display'
+        );
+
+    const grid =
+        document.getElementById(
+            'token-grid'
+        );
+
+
+    if (lifeDisplay) {
+        lifeDisplay.textContent =
+            state.lifeTotal;
+    }
+
+
+    if (!grid) {
+        return;
+    }
+
+
+    grid.innerHTML = '';
+
 
     state.tokens.forEach(token => {
-        const card = document.createElement('div');
-        
-        // Apply art background identifier rules dynamically if a url handle is found
+        const card =
+            document.createElement('div');
+
+
+        const tappedClass =
+            token.tapped
+                ? 'tapped'
+                : '';
+
+
+        // ----------------------------------------------------
+        // Token appearance
+        // ----------------------------------------------------
+
         if (token.artUrl) {
-            card.className = `token-card has-art ${token.tapped ? 'tapped' : ''}`;
-            card.style.backgroundImage = `url('${token.artUrl}')`;
+            card.className =
+                `token-card has-art ${tappedClass}`;
+
+
+            /*
+             * Safely assign the Scryfall image URL as a
+             * CSS background image.
+             */
+            card.style.backgroundImage =
+                `url(${JSON.stringify(token.artUrl)})`;
+
         } else {
-            card.className = `token-card clr-${token.color} ${token.tapped ? 'tapped' : ''}`;
-            card.style.backgroundImage = 'none';
+            card.className =
+                `token-card clr-${token.color} ${tappedClass}`;
+
+            card.style.backgroundImage =
+                'none';
         }
-        
-        // Calculate power display strings securely
-        let pDisplay = token.pow;
-        let tDisplay = token.tou;
-        
-        if (!isNaN(parseInt(token.pow))) pDisplay = parseInt(token.pow) + token.counters;
-        if (!isNaN(parseInt(token.tou))) tDisplay = parseInt(token.tou) + token.counters;
+
+
+        // ----------------------------------------------------
+        // P/T
+        // ----------------------------------------------------
+
+        const power =
+            getDisplayedStat(
+                token.pow,
+                token.counters
+            );
+
+
+        const toughness =
+            getDisplayedStat(
+                token.tou,
+                token.counters
+            );
+
+
+        // ----------------------------------------------------
+        // Token contents
+        // ----------------------------------------------------
 
         card.innerHTML = `
             <div class="token-header">
-                <span class="token-title">${token.name}</span>
-                <button class="btn-delete" onclick="deleteToken('${token.id}')">✕</button>
+
+                <span class="token-title">
+                    ${escapeHtml(token.name)}
+                </span>
+
+                <button
+                    type="button"
+                    class="btn-delete"
+                    data-action="delete"
+                    data-id="${escapeHtml(token.id)}"
+                    aria-label="Delete token"
+                >
+                    ✕
+                </button>
+
             </div>
-            
-            <div class="token-pt">${pDisplay}/${tDisplay}</div>
-            
-            <!-- Injected Rules Box -->
-            <div class="token-rules">${token.rules || ''}</div>
-            
+
+
+            <div class="token-pt">
+                ${escapeHtml(power)}/${escapeHtml(toughness)}
+            </div>
+
+
+            <div class="token-rules">
+                ${escapeHtml(token.rules || '')}
+            </div>
+
+
             <div class="counter-badge">
-                ${token.counters >= 0 ? '+' : ''}${token.counters} Counters
+                ${token.counters >= 0 ? '+' : ''}
+                ${token.counters}
+                Counters
             </div>
-            
+
+
             <div class="token-controls">
-                <button class="btn-sm" onclick="adjustCounters('${token.id}', -1)">Ctr -1</button>
-                <button class="btn-sm" onclick="adjustCounters('${token.id}', 1)">Ctr +1</button>
+
+                <button
+                    type="button"
+                    class="btn-sm"
+                    data-action="counter-down"
+                    data-id="${escapeHtml(token.id)}"
+                >
+                    Ctr -1
+                </button>
+
+
+                <button
+                    type="button"
+                    class="btn-sm"
+                    data-action="counter-up"
+                    data-id="${escapeHtml(token.id)}"
+                >
+                    Ctr +1
+                </button>
+
             </div>
-            
-            <button class="btn-tap" onclick="toggleTap('${token.id}')">
+
+
+            <button
+                type="button"
+                class="btn-tap"
+                data-action="tap"
+                data-id="${escapeHtml(token.id)}"
+            >
                 ${token.tapped ? 'UNTAP' : 'TAP'}
             </button>
         `;
+
+
         grid.appendChild(card);
     });
 }
 
-// Hide autocomplete box overlay list if clicking outside the text field form area
-document.addEventListener('click', (e) => {
-    if (e.target.id !== 'token-name') {
-        const box = document.getElementById('autocomplete-box');
-        if (box) box.innerHTML = '';
-    }
-});
 
-render();
+// ============================================================
+// TOKEN BUTTON EVENTS
+// ============================================================
+
+function handleTokenGridClick(event) {
+    const button =
+        event.target.closest(
+            'button[data-action]'
+        );
+
+
+    if (!button) {
+        return;
+    }
+
+
+    const action =
+        button.dataset.action;
+
+    const id =
+        button.dataset.id;
+
+
+    if (!id) {
+        return;
+    }
+
+
+    switch (action) {
+        case 'delete':
+            deleteToken(id);
+            break;
+
+        case 'counter-down':
+            adjustCounters(id, -1);
+            break;
+
+        case 'counter-up':
+            adjustCounters(id, 1);
+            break;
+
+        case 'tap':
+            toggleTap(id);
+            break;
+    }
+}
+
+
+// ============================================================
+// CLOSE AUTOCOMPLETE
+// ============================================================
+
+function handleDocumentClick(event) {
+    const input =
+        document.getElementById(
+            'token-name'
+        );
+
+    const box =
+        document.getElementById(
+            'autocomplete-box'
+        );
+
+
+    if (!input || !box) {
+        return;
+    }
+
+
+    if (
+        event.target === input ||
+        box.contains(event.target)
+    ) {
+        return;
+    }
+
+
+    box.innerHTML = '';
+}
+
+
+// ============================================================
+// ESC KEY
+// ============================================================
+
+function handleNameKeydown(event) {
+    if (event.key !== 'Escape') {
+        return;
+    }
+
+
+    const box =
+        document.getElementById(
+            'autocomplete-box'
+        );
+
+
+    if (box) {
+        box.innerHTML = '';
+    }
+}
+
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+function initializeApp() {
+    const grid =
+        document.getElementById(
+            'token-grid'
+        );
+
+    const nameInput =
+        document.getElementById(
+            'token-name'
+        );
+
+
+    if (grid) {
+        grid.addEventListener(
+            'click',
+            handleTokenGridClick
+        );
+    }
+
+
+    if (nameInput) {
+        nameInput.addEventListener(
+            'keydown',
+            handleNameKeydown
+        );
+    }
+
+
+    document.addEventListener(
+        'click',
+        handleDocumentClick
+    );
+
+
+    render();
+}
+
+
+// ============================================================
+// START APP
+// ============================================================
+
+if (document.readyState === 'loading') {
+    document.addEventListener(
+        'DOMContentLoaded',
+        initializeApp
+    );
+} else {
+    initializeApp();
+}
