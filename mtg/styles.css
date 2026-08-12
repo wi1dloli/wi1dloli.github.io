@@ -1,6 +1,6 @@
 /* ============================================================
    WI1DTRACK - STYLES
-   iOS 9.3.5 Compatible - COMPLETE VERSION
+   iOS 9.3.5 Compatible - COMPLETE
    ============================================================ */
 
 :root {
@@ -188,7 +188,9 @@ input[type="number"] {
 }
 
 input[type="number"] {
+    -webkit-appearance: textfield;
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -323,7 +325,7 @@ input[type="number"]::-webkit-outer-spin-button {
     background-color: var(--bg-card);
     border: 3px solid #333;
     border-radius: 10px;
-    padding: 10px 8px;
+    padding: 0;
     text-align: center;
     display: -webkit-box;
     display: -webkit-flex;
@@ -423,6 +425,60 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ============================================================
+   TOKEN IMAGE
+   ============================================================ */
+
+.token-image-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 7px;
+}
+
+.token-image {
+    width: 100%;
+    height: 100%;
+    -webkit-object-fit: cover;
+    object-fit: cover;
+    display: block;
+}
+
+/* ============================================================
+   TOKEN CONTENT (overlay)
+   ============================================================ */
+
+.token-content {
+    position: relative;
+    z-index: 2;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: space-between;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    height: 100%;
+    padding: 10px 8px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 7px;
+}
+
+/* Fallback for when image fails */
+.token-card.has-art .token-content {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================================
    TOKEN CARD INTERIOR
    ============================================================ */
 
@@ -440,7 +496,6 @@ input[type="number"]::-webkit-outer-spin-button {
     -ms-flex-align: start;
     align-items: flex-start;
     min-height: 28px;
-    margin-bottom: 2px;
 }
 
 .token-title {
@@ -556,36 +611,6 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ============================================================
-   IMAGE CARDS
-   ============================================================ */
-
-.token-card.has-art {
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    min-height: 210px;
-    height: 210px;
-    border-color: rgba(0,0,0,0.4);
-}
-
-.token-card.has-art::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 7px;
-    z-index: 1;
-}
-
-.token-card.has-art > * {
-    position: relative;
-    z-index: 2;
-}
-
-/* ============================================================
    AUTOCOMPLETE
    ============================================================ */
 
@@ -663,12 +688,6 @@ input[type="number"]::-webkit-outer-spin-button {
     .token-card {
         width: 130px;
         height: 182px;
-        padding: 8px 6px;
-    }
-    
-    .token-card.has-art {
-        height: 182px;
-        min-height: 182px;
     }
     
     .token-grid {
@@ -688,12 +707,6 @@ input[type="number"]::-webkit-outer-spin-button {
     .token-card {
         width: 110px;
         height: 154px;
-        padding: 6px 4px;
-    }
-    
-    .token-card.has-art {
-        height: 154px;
-        min-height: 154px;
     }
     
     .token-title {
@@ -750,12 +763,6 @@ input[type="number"]::-webkit-inner-spin-button {
     transform: translateZ(0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-}
-
-.token-card.has-art {
-    -webkit-background-size: cover;
-    background-size: cover;
-    background-position: center center;
 }
 
 .token-card.tapped {

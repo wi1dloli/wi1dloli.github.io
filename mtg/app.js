@@ -1,7 +1,6 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
-// Token-only + single-faced + artifact-aware Scryfall search
-// iOS 9.3.5 Compatible - FIXED TOKEN CREATION
+// iOS 9.3.5 Compatible - IMG TAG APPROACH
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -11,21 +10,19 @@ var SCRYFALL_API = 'https://api.scryfall.com';
 // POLYFILLS FOR iOS 9.3.5
 // ============================================================
 
-// Array.isArray polyfill
 if (!Array.isArray) {
     Array.isArray = function(arg) {
         return Object.prototype.toString.call(arg) === '[object Array]';
     };
 }
 
-// Array.prototype.find polyfill
 if (!Array.prototype.find) {
     Array.prototype.find = function(predicate) {
         if (this === null) {
             throw new TypeError('Array.prototype.find called on null or undefined');
         }
         if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be a function');
+            throw new TypeError('predicate must be function');
         }
         var list = Object(this);
         var length = list.length >>> 0;
@@ -42,9 +39,8 @@ if (!Array.prototype.find) {
     };
 }
 
-// Array.prototype.filter polyfill
 if (!Array.prototype.filter) {
-    Array.prototype.filter = function(fun /*, thisArg*/) {
+    Array.prototype.filter = function(fun) {
         if (this === void 0 || this === null) {
             throw new TypeError();
         }
@@ -137,10 +133,6 @@ function isSingleFacedToken(card) {
     return true;
 }
 
-// ============================================================
-// ARTIFACT DETECTION
-// ============================================================
-
 function isArtifactToken(card) {
     if (!card) {
         return false;
@@ -149,10 +141,6 @@ function isArtifactToken(card) {
     var typeLine = card.type_line || '';
     return /\bArtifact\b/i.test(typeLine);
 }
-
-// ============================================================
-// ARTIFACT CREATURE DETECTION
-// ============================================================
 
 function isArtifactCreatureToken(card) {
     if (!card) {
@@ -164,61 +152,32 @@ function isArtifactCreatureToken(card) {
 }
 
 // ============================================================
-// IMAGE HANDLING - FIXED
+// IMAGE HANDLING
 // ============================================================
-
-var imageCache = {};
 
 function getCardImage(card) {
     if (!card) {
         return '';
     }
 
-    var imageUrls = [];
+    // Try PNG first (better for iOS 9)
+    if (card.image_uris && card.image_uris.png) {
+        return card.image_uris.png;
+    }
     
-    if (card.image_uris) {
-        if (card.image_uris.png) {
-            imageUrls.push(card.image_uris.png);
-        }
-        if (card.image_uris.large) {
-            imageUrls.push(card.image_uris.large);
-        }
-        if (card.image_uris.normal) {
-            imageUrls.push(card.image_uris.normal);
-        }
-        if (card.image_uris.small) {
-            imageUrls.push(card.image_uris.small);
-        }
-        if (card.image_uris.art_crop) {
-            imageUrls.push(card.image_uris.art_crop);
-        }
+    if (card.image_uris && card.image_uris.normal) {
+        return card.image_uris.normal;
+    }
+    
+    if (card.image_uris && card.image_uris.small) {
+        return card.image_uris.small;
+    }
+    
+    if (card.image_uris && card.image_uris.art_crop) {
+        return card.image_uris.art_crop;
     }
 
-    if (card.card_faces && Array.isArray(card.card_faces)) {
-        card.card_faces.forEach(function(face) {
-            if (face.image_uris) {
-                if (face.image_uris.png) {
-                    imageUrls.push(face.image_uris.png);
-                }
-                if (face.image_uris.normal) {
-                    imageUrls.push(face.image_uris.normal);
-                }
-                if (face.image_uris.small) {
-                    imageUrls.push(face.image_uris.small);
-                }
-                if (face.image_uris.art_crop) {
-                    imageUrls.push(face.image_uris.art_crop);
-                }
-            }
-        });
-    }
-
-    return imageUrls.length > 0 ? imageUrls[0] : '';
-}
-
-function isIOS9() {
-    var ua = navigator.userAgent;
-    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+    return '';
 }
 
 // ============================================================
@@ -333,10 +292,6 @@ function handleNameInput(query) {
     }, 250);
 }
 
-// ============================================================
-// FORMAT SUGGESTION HTML
-// ============================================================
-
 function formatSuggestionHTML(card) {
     var name = card.name || '';
     var typeLine = card.type_line || '';
@@ -397,10 +352,6 @@ function formatSuggestionHTML(card) {
     return html;
 }
 
-// ============================================================
-// EXTRACT KEYWORDS
-// ============================================================
-
 function extractKeywords(text) {
     if (!text) return [];
     
@@ -443,10 +394,6 @@ function extractKeywords(text) {
     return found.slice(0, 6);
 }
 
-// ============================================================
-// SELECT TOKEN
-// ============================================================
-
 function selectToken(card) {
     var input = document.getElementById('token-name');
     var box = document.getElementById('autocomplete-box');
@@ -484,10 +431,6 @@ function selectToken(card) {
         form.dispatchEvent(new Event('submit'));
     }
 }
-
-// ============================================================
-// FIND TOKEN
-// ============================================================
 
 function findToken(tokenName) {
     var name = tokenName.trim();
@@ -555,10 +498,6 @@ function findToken(tokenName) {
     });
 }
 
-// ============================================================
-// CARD RULES
-// ============================================================
-
 function getCardRules(card) {
     if (!card) {
         return '';
@@ -566,10 +505,6 @@ function getCardRules(card) {
 
     return card.oracle_text || '';
 }
-
-// ============================================================
-// CARD POWER
-// ============================================================
 
 function getCardPower(card) {
     if (!card) {
@@ -582,10 +517,6 @@ function getCardPower(card) {
 
     return null;
 }
-
-// ============================================================
-// CARD TOUGHNESS
-// ============================================================
 
 function getCardToughness(card) {
     if (!card) {
@@ -639,10 +570,8 @@ function handleNewToken(event) {
     var selectedCard = window._selectedTokenCard || null;
     
     if (selectedCard && selectedCard.name === name) {
-        // Use the selected card directly
         createTokensFromCard(selectedCard, name, quantity, colorInput, powInput, touInput);
     } else {
-        // Look up the token
         findToken(name)
             .then(function(card) {
                 createTokensFromCard(card, name, quantity, colorInput, powInput, touInput);
@@ -653,10 +582,6 @@ function handleNewToken(event) {
             });
     }
 }
-
-// ============================================================
-// CREATE TOKENS FROM CARD
-// ============================================================
 
 function createTokensFromCard(card, name, quantity, colorInput, powInput, touInput) {
     var imageUrl = '';
@@ -693,7 +618,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         }
     }
 
-    // Create tokens
     for (var i = 0; i < quantity; i++) {
         state.tokens.push({
             id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
@@ -710,7 +634,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         });
     }
 
-    // Reset form
     var nameInput = document.getElementById('token-name');
     if (nameInput) nameInput.value = '';
     if (powInput) powInput.value = '1';
@@ -725,7 +648,7 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
 }
 
 // ============================================================
-// TOKEN COUNTERS
+// TOKEN CONTROLS
 // ============================================================
 
 function adjustCounters(id, amount) {
@@ -743,10 +666,6 @@ function adjustCounters(id, amount) {
     render();
 }
 
-// ============================================================
-// TAP / UNTAP
-// ============================================================
-
 function toggleTap(id) {
     var token = state.tokens.find(function(token) {
         return token.id === id;
@@ -762,10 +681,6 @@ function toggleTap(id) {
     render();
 }
 
-// ============================================================
-// DELETE TOKEN
-// ============================================================
-
 function deleteToken(id) {
     state.tokens = state.tokens.filter(function(token) {
         return token.id !== id;
@@ -776,7 +691,7 @@ function deleteToken(id) {
 }
 
 // ============================================================
-// HTML ESCAPING
+// RENDER HELPERS
 // ============================================================
 
 function escapeHtml(value) {
@@ -788,10 +703,6 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
-// ============================================================
-// DISPLAY P/T
-// ============================================================
-
 function getDisplayedStat(baseValue, counters) {
     var value = String(baseValue || '');
 
@@ -802,16 +713,12 @@ function getDisplayedStat(baseValue, counters) {
     return value;
 }
 
-// ============================================================
-// SHOULD SHOW P/T
-// ============================================================
-
 function shouldShowPT(token) {
     return !token.isArtifact || token.isArtifactCreature;
 }
 
 // ============================================================
-// RENDER
+// RENDER - USING IMG TAG FOR iOS 9
 // ============================================================
 
 function render() {
@@ -836,15 +743,14 @@ function render() {
 
         var tappedClass = token.tapped ? 'tapped' : '';
 
+        // Set the card class
         if (token.artUrl) {
             card.className = 'token-card has-art ' + tappedClass;
-            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
-            card.style.backgroundColor = '#1a1a2e';
         } else {
             card.className = 'token-card clr-' + token.color + ' ' + tappedClass;
-            card.style.backgroundImage = 'none';
         }
 
+        // Build the card content
         var ptDisplay = '';
 
         if (shouldShowPT(token)) {
@@ -861,7 +767,8 @@ function render() {
             artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
         }
 
-        card.innerHTML = 
+        // Create the card HTML
+        var cardHTML = 
             '<div class="token-header">' +
                 '<span class="token-title">' + escapeHtml(token.name) + '</span>' +
                 '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" aria-label="Delete token">' +
@@ -880,13 +787,45 @@ function render() {
                 (token.tapped ? 'UNTAP' : 'TAP') +
             '</button>';
 
+        // If there's an image, add it as an img tag
+        if (token.artUrl) {
+            // Add the image as a background element
+            var imgWrapper = document.createElement('div');
+            imgWrapper.className = 'token-image-wrapper';
+            
+            var img = document.createElement('img');
+            img.className = 'token-image';
+            img.src = token.artUrl;
+            img.alt = token.name;
+            img.setAttribute('crossOrigin', 'anonymous');
+            img.setAttribute('referrerPolicy', 'no-referrer');
+            
+            // Add error handler for when image fails
+            img.onerror = function() {
+                // If image fails, add a fallback color
+                card.style.backgroundColor = '#1a1a2e';
+            };
+            
+            imgWrapper.appendChild(img);
+            
+            // Create content wrapper
+            var contentWrapper = document.createElement('div');
+            contentWrapper.className = 'token-content';
+            contentWrapper.innerHTML = cardHTML;
+            
+            card.appendChild(imgWrapper);
+            card.appendChild(contentWrapper);
+        } else {
+            card.innerHTML = cardHTML;
+        }
+
         wrapper.appendChild(card);
         grid.appendChild(wrapper);
     });
 }
 
 // ============================================================
-// TOKEN BUTTON EVENTS
+// EVENT HANDLERS
 // ============================================================
 
 function handleTokenGridClick(event) {
@@ -919,10 +858,6 @@ function handleTokenGridClick(event) {
     }
 }
 
-// ============================================================
-// CLOSE AUTOCOMPLETE
-// ============================================================
-
 function handleDocumentClick(event) {
     var input = document.getElementById('token-name');
     var box = document.getElementById('autocomplete-box');
@@ -938,10 +873,6 @@ function handleDocumentClick(event) {
     box.innerHTML = '';
     window._selectedTokenCard = null;
 }
-
-// ============================================================
-// ESC KEY
-// ============================================================
 
 function handleNameKeydown(event) {
     if (event.key !== 'Escape') {
@@ -976,10 +907,6 @@ function initializeApp() {
 
     render();
 }
-
-// ============================================================
-// START APP
-// ============================================================
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
