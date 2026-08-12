@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>wi1dtrack</h1>
+    </header>
+
+    <div class="game-layout">
+        
+        <!-- LEFT COLUMN: Token Management -->
+        <div class="left-col">
+            <div class="card form-card">
+                <h2>Create Tokens</h2>
+                <form id="token-form" onsubmit="handleNewToken(event)">
+                    <div class="form-group">
+                        <label for="token-name">Token Name</label>
+                        <input type="text" id="token-name" placeholder="e.g., Soldier, Zombie" required>
+                    </div>
+                    
+                    <div class="compact-row">
+                        <div class="input-inline">
+                            <label for="token-pow">PWR</label>
+                            <input type="number" id="token-pow" value="1" required>
+                        </div>
+                        <div class="input-inline">
+                            <label for="token-tou">TGH</label>
+                            <input type="number" id="token-tou" value="1" required>
+                        </div>
+                        <div class="input-inline">
+                            <label for="token-qty-input">AMT</label>
+                            <input type="number" id="token-qty-input" value="1" min="1" required>
+                        </div>
+                        <div class="input-inline">
+                            <label for="token-color">CLR</label>
+                            <select id="token-color">
+                                <option value="W">White</option>
+                                <option value="U">Blue</option>
+                                <option value="B">Black</option>
+                                <option value="R">Red</option>
+                                <option value="G">Green</option>
+                                <option value="C">Colorless</option>
+                                <option value="M" selected>Multi</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Tokens</button>
+                </form>
+            </div>
+
+            <h2>Active Tokens</h2>
+            <div id="token-grid" class="token-grid"></div>
+        </div>
+
+        <!-- RIGHT COLUMN: Life Total Panel -->
+        <div class="right-col">
+            <div class="card life-card sticky-life">
+                <h2>Life</h2>
+                <div class="life-row">
+                    <div id="life-display" class="life-display">40</div>
+                    <div class="life-controls">
+                        <button class="btn-life" onclick="adjustLife(1)">+</button>
+                        <button class="btn-life" onclick="adjustLife(-1)">-</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
