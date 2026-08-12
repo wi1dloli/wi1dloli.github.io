@@ -4,57 +4,82 @@ html, body {
     background-color: #140920;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
     color: #D1D7E1;
-  }
-  
-  b {
-      color: #C3D5F1;
-  }
-  
-  a{
-      color:#5EA3D4;
-      background-color: transparent;
-  }
-  a:visited{
-      color:#A480CF;
-  }
-  a:hover{
-      color:#BFA6DD;
-  }
-  
-  #navigation-bar {
-      background-color: #333;
-  }
-  
-  #navigation-links {
-      list-style-type: none;
-      margin: 0;
-      padding: 0;
-      display: flex; /* Use flexbox to create a horizontal layout */
-  }
-  
-  #navigation-links li {
-      padding: 10px;
-  }
-  
-  #navigation-links a {
-      text-decoration: none;
-      color: #fff;
-      display: block;
-  }
-  
-  #navigation-links a:hover {
-      background-color: #555;
-  }
-  
-  .current {
-      background-color: #555;
-  }
-  
-  .axis-cult-container {
+}
+
+b {
+    color: #C3D5F1;
+}
+
+a {
+    color: #5EA3D4;
+    background-color: transparent;
+}
+a:visited {
+    color: #A480CF;
+}
+a:hover {
+    color: #BFA6DD;
+}
+
+#navigation-bar {
+    background-color: #333;
+}
+
+#navigation-links {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex; /* Use flexbox to create a horizontal layout */
+}
+
+#navigation-links li {
+    padding: 10px;
+}
+
+#navigation-links a {
+    text-decoration: none;
+    color: #fff;
+    display: block;
+}
+
+#navigation-links a:hover {
+    background-color: #555;
+}
+
+.current {
+    background-color: #555;
+}
+
+/* ==========================================================================
+   NEW HERO IMAGE & HERO TEXT CODE
+   ========================================================================== */
+.hero-image {
+    /* Uses a linear-gradient dark filter overlay so your white text is easily readable over the image */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("images/asuka.gif");
+    height: 40vh; /* Takes up 40% of the screen height */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+}
+
+.hero-text {
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Perfectly centers the text box inside the banner container */
+    color: white;
+}
+
+/* ==========================================================================
+   AXIS CULT / AQUA IMAGE GIMMICK RULES
+   ========================================================================== */
+.axis-cult-container {
     text-align: center;
     margin: 20px 0;
-  }
-  .purify-btn {
+}
+.purify-btn {
     background-color: #00a2ff;
     color: white;
     border: 2px solid #0055ff;
@@ -62,16 +87,14 @@ html, body {
     font-weight: bold;
     cursor: pointer;
     border-radius: 5px;
-  }
-  .aqua-img {
+}
+.aqua-img {
     display: block;
     margin: 15px auto;
     filter: blur(30px); /* Completely unreadable at first */
     transition: filter 0.5s ease-in-out;
-  }
-  /* Triggered when button is clicked */
-  .aqua-img.revealed {
+}
+/* Triggered when button is clicked */
+.aqua-img.revealed {
     filter: blur(0px);
-  }
-  
-  
+}
