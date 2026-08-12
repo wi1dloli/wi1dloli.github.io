@@ -1,6 +1,6 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
-// Token-only + single-faced Scryfall search
+// Token-only + single-faced + artifact-aware Scryfall search
 // ============================================================
 
 const STORAGE_KEY = 'mtg_state';
@@ -83,36 +83,52 @@ function adjustLife(amount) {
 // TOKEN VALIDATION
 // ============================================================
 
-/*
- * Returns true when the Scryfall card is a single-faced token.
- *
- * Cards with card_faces are double-faced/modal cards, so they
- * are excluded from the token picker.
- */
 function isSingleFacedToken(card) {
     if (!card) {
         return false;
     }
 
-    // Must be a token.
-    if (card.layout === 'token') {
-        return true;
-    }
 
     /*
-     * Some Scryfall token objects can have other layouts.
-     * If the card explicitly has multiple faces, reject it.
+     * Double-faced cards are excluded.
+     *
+     * This removes things such as:
+     *
+     * Dinosaur // Treasure
      */
     if (Array.isArray(card.card_faces)) {
         return false;
     }
 
-    /*
-     * Some token-related Scryfall objects may not expose the
-     * layout exactly as "token", so allow a normal single-faced
-     * card returned from a t:token search.
-     */
+
     return true;
+}
+
+
+// ============================================================
+// ARTIFACT DETECTION
+// ============================================================
+
+function isArtifactToken(card) {
+    if (!card) {
+        return false;
+    }
+
+
+    /*
+     * Scryfall's type_line contains values such as:
+     *
+     * "Artifact Token"
+     * "Artifact Creature Token"
+     * "Token Artifact — Clue"
+     *
+     * We check for the word "Artifact".
+     */
+    const typeLine =
+        card.type_line || '';
+
+
+    return /\bArtifact\b/i.test(typeLine);
 }
 
 
@@ -130,13 +146,16 @@ async function handleNameInput(query) {
             'autocomplete-box'
         );
 
+
     if (!box) {
         return;
     }
 
+
     clearTimeout(autocompleteTimer);
 
     query = query.trim();
+
 
     if (query.length < 2) {
         box.innerHTML = '';
@@ -148,19 +167,23 @@ async function handleNameInput(query) {
         const requestNumber =
             ++autocompleteRequest;
 
+
         try {
             /*
-             * Search specifically for tokens whose names begin
-             * with the user's input.
+             * Search specifically for tokens whose names
+             * begin with the entered text.
              */
             const searchQuery =
                 `t:token name:${query}*`;
 
+
             const url =
                 `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
 
+
             const response =
                 await fetch(url);
+
 
             if (!response.ok) {
                 throw new Error(
@@ -168,11 +191,12 @@ async function handleNameInput(query) {
                 );
             }
 
+
             const data =
                 await response.json();
 
 
-            // Ignore an older request.
+            // Ignore an old request.
             if (
                 requestNumber !== autocompleteRequest
             ) {
@@ -189,13 +213,7 @@ async function handleNameInput(query) {
 
 
             /*
-             * Only keep single-faced tokens.
-             *
-             * This removes things such as:
-             *
-             * Dinosaur // Treasure
-             *
-             * and other cards with card_faces.
+             * Only display single-faced tokens.
              */
             const validTokens =
                 data.data.filter(
@@ -219,11 +237,14 @@ async function handleNameInput(query) {
                 const suggestion =
                     document.createElement('div');
 
+
                 suggestion.className =
                     'suggestion-item';
 
+
                 suggestion.textContent =
                     name;
+
 
                 suggestion.addEventListener(
                     'click',
@@ -232,14 +253,17 @@ async function handleNameInput(query) {
                     }
                 );
 
+
                 box.appendChild(suggestion);
             });
+
 
         } catch (error) {
             console.error(
                 'Token autocomplete error:',
                 error
             );
+
 
             if (
                 requestNumber === autocompleteRequest
@@ -262,6 +286,7 @@ function selectSuggestion(name) {
             'token-name'
         );
 
+
     const box =
         document.getElementById(
             'autocomplete-box'
@@ -280,12 +305,13 @@ function selectSuggestion(name) {
 
 
 // ============================================================
-// FIND SINGLE-FACED TOKEN
+// FIND TOKEN
 // ============================================================
 
 async function findToken(tokenName) {
     const name =
         tokenName.trim();
+
 
     if (!name) {
         return null;
@@ -300,8 +326,10 @@ async function findToken(tokenName) {
         const searchQuery =
             `!"${name}" t:token`;
 
+
         const url =
             `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
+
 
         const response =
             await fetch(url);
@@ -313,10 +341,6 @@ async function findToken(tokenName) {
 
 
             if (Array.isArray(data.data)) {
-                /*
-                 * Find the first result that is actually a
-                 * single-faced token.
-                 */
                 const token =
                     data.data.find(
                         card => isSingleFacedToken(card)
@@ -345,8 +369,10 @@ async function findToken(tokenName) {
         const searchQuery =
             `${name} t:token`;
 
+
         const url =
             `${SCRYFALL_API}/cards/search?q=${encodeURIComponent(searchQuery)}`;
+
 
         const response =
             await fetch(url);
@@ -393,8 +419,7 @@ function getCardImage(card) {
 
 
     /*
-     * We intentionally do not use card_faces here because
-     * double-faced tokens are excluded.
+     * Single-faced tokens only.
      */
     if (card.image_uris?.normal) {
         return card.image_uris.normal;
@@ -415,9 +440,6 @@ function getCardRules(card) {
     }
 
 
-    /*
-     * Single-faced only.
-     */
     return card.oracle_text || '';
 }
 
@@ -473,25 +495,30 @@ async function handleNewToken(event) {
             'token-name'
         );
 
+
     const powInput =
         document.getElementById(
             'token-pow'
         );
+
 
     const touInput =
         document.getElementById(
             'token-tou'
         );
 
+
     const qtyInput =
         document.getElementById(
             'token-qty-input'
         );
 
+
     const colorInput =
         document.getElementById(
             'token-color'
         );
+
 
     const autocompleteBox =
         document.getElementById(
@@ -554,12 +581,16 @@ async function handleNewToken(event) {
     let power =
         powInput.value.trim() || '1';
 
+
     let toughness =
         touInput.value.trim() || '1';
 
 
+    let artifactToken = false;
+
+
     // --------------------------------------------------------
-    // Find token in Scryfall
+    // Scryfall lookup
     // --------------------------------------------------------
 
     try {
@@ -571,26 +602,37 @@ async function handleNewToken(event) {
             imageUrl =
                 getCardImage(card);
 
+
             rulesText =
                 getCardRules(card);
 
 
-            const scryfallPower =
-                getCardPower(card);
-
-            const scryfallToughness =
-                getCardToughness(card);
+            artifactToken =
+                isArtifactToken(card);
 
 
-            if (scryfallPower !== null) {
-                power =
-                    String(scryfallPower);
-            }
+            /*
+             * Only replace P/T when this is a creature token.
+             */
+            if (!artifactToken) {
+                const scryfallPower =
+                    getCardPower(card);
 
 
-            if (scryfallToughness !== null) {
-                toughness =
-                    String(scryfallToughness);
+                const scryfallToughness =
+                    getCardToughness(card);
+
+
+                if (scryfallPower !== null) {
+                    power =
+                        String(scryfallPower);
+                }
+
+
+                if (scryfallToughness !== null) {
+                    toughness =
+                        String(scryfallToughness);
+                }
             }
         }
 
@@ -615,9 +657,13 @@ async function handleNewToken(event) {
 
             name: name,
 
-            pow: power,
+            pow: artifactToken
+                ? ''
+                : power,
 
-            tou: toughness,
+            tou: artifactToken
+                ? ''
+                : toughness,
 
             color:
                 colorInput.value,
@@ -628,7 +674,9 @@ async function handleNewToken(event) {
 
             artUrl: imageUrl,
 
-            rules: rulesText
+            rules: rulesText,
+
+            isArtifact: artifactToken
         });
     }
 
@@ -671,6 +719,7 @@ function adjustCounters(id, amount) {
 
 
     token.counters += amount;
+
 
     saveToStorage();
 
@@ -722,7 +771,7 @@ function deleteToken(id) {
 
 
 // ============================================================
-// ESCAPE HTML
+// HTML ESCAPING
 // ============================================================
 
 function escapeHtml(value) {
@@ -751,7 +800,6 @@ function getDisplayedStat(
      * Numeric values receive counters.
      * Non-numeric values remain unchanged.
      */
-
     if (/^-?\d+$/.test(value)) {
         return (
             Number(value) +
@@ -773,6 +821,7 @@ function render() {
         document.getElementById(
             'life-display'
         );
+
 
     const grid =
         document.getElementById(
@@ -806,7 +855,7 @@ function render() {
 
 
         // ----------------------------------------------------
-        // Token appearance
+        // Appearance
         // ----------------------------------------------------
 
         if (token.artUrl) {
@@ -814,16 +863,13 @@ function render() {
                 `token-card has-art ${tappedClass}`;
 
 
-            /*
-             * Safely assign the Scryfall image URL as a
-             * CSS background image.
-             */
             card.style.backgroundImage =
                 `url(${JSON.stringify(token.artUrl)})`;
 
         } else {
             card.className =
                 `token-card clr-${token.color} ${tappedClass}`;
+
 
             card.style.backgroundImage =
                 'none';
@@ -834,22 +880,49 @@ function render() {
         // P/T
         // ----------------------------------------------------
 
-        const power =
-            getDisplayedStat(
-                token.pow,
-                token.counters
-            );
+        let ptDisplay = '';
 
 
-        const toughness =
-            getDisplayedStat(
-                token.tou,
-                token.counters
-            );
+        /*
+         * Artifact tokens don't have P/T.
+         *
+         * The isArtifact property is stored when the token
+         * is created, so the information survives refreshes.
+         */
+        if (!token.isArtifact) {
+            const power =
+                getDisplayedStat(
+                    token.pow,
+                    token.counters
+                );
+
+
+            const toughness =
+                getDisplayedStat(
+                    token.tou,
+                    token.counters
+                );
+
+
+            /*
+             * Only display P/T if there is actually something
+             * to display.
+             */
+            if (
+                power !== '' &&
+                toughness !== ''
+            ) {
+                ptDisplay = `
+                    <div class="token-pt">
+                        ${escapeHtml(power)}/${escapeHtml(toughness)}
+                    </div>
+                `;
+            }
+        }
 
 
         // ----------------------------------------------------
-        // Token contents
+        // Token HTML
         // ----------------------------------------------------
 
         card.innerHTML = `
@@ -858,6 +931,7 @@ function render() {
                 <span class="token-title">
                     ${escapeHtml(token.name)}
                 </span>
+
 
                 <button
                     type="button"
@@ -872,9 +946,7 @@ function render() {
             </div>
 
 
-            <div class="token-pt">
-                ${escapeHtml(power)}/${escapeHtml(toughness)}
-            </div>
+            ${ptDisplay}
 
 
             <div class="token-rules">
@@ -883,7 +955,7 @@ function render() {
 
 
             <div class="counter-badge">
-                ${token.counters >= 0 ? '+' : ''}
+                ${token.counters >= 0 ? '' : ''}
                 ${token.counters}
                 Counters
             </div>
@@ -897,7 +969,7 @@ function render() {
                     data-action="counter-down"
                     data-id="${escapeHtml(token.id)}"
                 >
-                    Ctr -1
+                    -1
                 </button>
 
 
@@ -907,7 +979,7 @@ function render() {
                     data-action="counter-up"
                     data-id="${escapeHtml(token.id)}"
                 >
-                    Ctr +1
+                    + 1
                 </button>
 
             </div>
@@ -948,6 +1020,7 @@ function handleTokenGridClick(event) {
     const action =
         button.dataset.action;
 
+
     const id =
         button.dataset.id;
 
@@ -962,13 +1035,16 @@ function handleTokenGridClick(event) {
             deleteToken(id);
             break;
 
+
         case 'counter-down':
             adjustCounters(id, -1);
             break;
 
+
         case 'counter-up':
             adjustCounters(id, 1);
             break;
+
 
         case 'tap':
             toggleTap(id);
@@ -986,6 +1062,7 @@ function handleDocumentClick(event) {
         document.getElementById(
             'token-name'
         );
+
 
     const box =
         document.getElementById(
@@ -1041,6 +1118,7 @@ function initializeApp() {
         document.getElementById(
             'token-grid'
         );
+
 
     const nameInput =
         document.getElementById(
