@@ -1,3 +1,8 @@
+/* ============================================================
+   WI1DTRACK - STYLES
+   iOS 9.3.5 Compatible
+   ============================================================ */
+
 :root {
     --bg-main: #121212;
     --bg-card: #1e1e1e;
@@ -8,36 +13,66 @@
     --success: #10b981;
 }
 
+* {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
 body {
     background-color: var(--bg-main);
     color: var(--text-main);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
     padding: 20px;
+    -webkit-text-size-adjust: 100%;
 }
 
 header h1 {
     text-align: center;
     margin-top: 0;
     margin-bottom: 20px;
+    font-size: 2rem;
 }
 
-/* Master Responsive Layout Split */
+/* Master Responsive Layout - Flexbox fallback for iOS 9 */
 .game-layout {
-    display: grid;
-    grid-template-columns: 1fr 240px;
-    gap: 30px;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
     max-width: 900px;
     margin: 0 auto;
+    gap: 30px;
 }
 
-/* Fallback to stack elements on mobile screens */
+.left-col {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    min-width: 280px;
+}
+
+.right-col {
+    width: 240px;
+    -webkit-flex-shrink: 0;
+    -ms-flex-negative: 0;
+    flex-shrink: 0;
+}
+
+/* Fallback to stack on mobile */
 @media (max-width: 600px) {
-    .game-layout { 
-        grid-template-columns: 1fr; 
+    .right-col {
+        width: 100%;
     }
-    .sticky-life { 
-        position: static !important; 
+    .sticky-life {
+        position: static !important;
+    }
+    .game-layout {
+        gap: 15px;
     }
 }
 
@@ -46,24 +81,49 @@ header h1 {
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 20px;
+    -webkit-box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
 .compact-row {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
+    -webkit-box-align: end;
+    -webkit-align-items: flex-end;
+    -ms-flex-align: end;
     align-items: flex-end;
 }
 
 .input-inline {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
     flex: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
 }
 
-.input-inline input, .input-inline select {
+.input-inline input,
+.input-inline select {
     width: 100%;
+    -webkit-box-sizing: border-box;
     box-sizing: border-box;
     text-align: center;
     background-color: #2a2a2a;
@@ -73,10 +133,26 @@ header h1 {
     border-radius: 6px;
     font-size: 1rem;
     height: 42px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.input-inline select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
 }
 
 .form-group {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
     margin-bottom: 15px;
 }
@@ -86,15 +162,31 @@ label {
     color: var(--text-muted);
     margin-bottom: 4px;
     font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-input {
+input[type="text"],
+input[type="number"] {
     background-color: #2a2a2a;
     border: 1px solid #444;
     color: white;
     padding: 10px;
     border-radius: 6px;
     font-size: 1rem;
+    width: 100%;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .btn {
@@ -106,18 +198,37 @@ input {
     cursor: pointer;
     color: white;
     width: 100%;
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
 }
-.btn-primary { background-color: var(--primary); }
 
-/* Sticky Life Counter Container */
+.btn-primary {
+    background-color: var(--primary);
+}
+
+.btn-primary:active {
+    background-color: #2563eb;
+}
+
+/* Sticky Life Counter */
 .sticky-life {
+    position: -webkit-sticky;
     position: sticky;
     top: 20px;
 }
 
 .life-row {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
     align-items: center;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: space-between;
+    -ms-flex-pack: justify;
     justify-content: space-between;
     background: #151515;
     padding: 15px;
@@ -128,10 +239,18 @@ input {
     font-size: 4rem;
     font-weight: bold;
     color: #ff4757;
+    line-height: 1;
 }
 
 .life-controls {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
     gap: 5px;
 }
@@ -145,34 +264,82 @@ input {
     height: 45px;
     border-radius: 6px;
     cursor: pointer;
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
 }
-.btn-life:hover { background: #3a3a3a; }
 
-/* Token Grid Structure */
+.btn-life:active {
+    background: #3a3a3a;
+}
+
+/* Token Grid - Flexbox fallback */
 .token-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 45px 25px; /* Extra vertical space accommodates the tap rotation overlay */
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    gap: 45px 25px;
     padding-top: 10px;
 }
 
-/* Master Token Card Configuration */
+.token-grid > * {
+    -webkit-box-flex: 0;
+    -webkit-flex: 0 0 calc(50% - 12.5px);
+    -ms-flex: 0 0 calc(50% - 12.5px);
+    flex: 0 0 calc(50% - 12.5px);
+    max-width: calc(50% - 12.5px);
+}
+
+@media (min-width: 500px) {
+    .token-grid > * {
+        -webkit-box-flex: 0;
+        -webkit-flex: 0 0 calc(33.333% - 16.67px);
+        -ms-flex: 0 0 calc(33.333% - 16.67px);
+        flex: 0 0 calc(33.333% - 16.67px);
+        max-width: calc(33.333% - 16.67px);
+    }
+}
+
+@media (min-width: 768px) {
+    .token-grid > * {
+        -webkit-box-flex: 0;
+        -webkit-flex: 0 0 calc(25% - 18.75px);
+        -ms-flex: 0 0 calc(25% - 18.75px);
+        flex: 0 0 calc(25% - 18.75px);
+        max-width: calc(25% - 18.75px);
+    }
+}
+
+/* Token Card */
 .token-card {
     background-color: var(--bg-card);
     border: 3px solid #333;
     border-radius: 10px;
     padding: 15px;
     text-align: center;
+    -webkit-transition: -webkit-transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: space-between;
+    -ms-flex-pack: justify;
     justify-content: space-between;
     position: relative;
     min-height: 150px;
-    will-change: transform;
 }
 
-/* MTG Static Border Colors */
+/* Color borders */
 .clr-W { border-color: #f0f2c7; }
 .clr-U { border-color: #0e68ab; }
 .clr-B { border-color: #1c1c1c; }
@@ -180,7 +347,7 @@ input {
 .clr-G { border-color: #2e7d32; }
 .clr-C { border-color: #757575; }
 
-/* Animated RGB Outer Boundary Setup */
+/* Multi-color animated border */
 .token-card.clr-M {
     border-color: transparent;
     position: relative;
@@ -189,7 +356,6 @@ input {
     overflow: hidden;
 }
 
-/* Moving Ring Background Mesh Layer */
 .token-card.clr-M::before {
     content: '';
     position: absolute;
@@ -197,53 +363,66 @@ input {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: conic-gradient(
-        #d32f2f, #f59e0b, #10b981, #0e68ab, #a855f7, #d32f2f
-    );
+    background: -webkit-conic-gradient(#d32f2f, #f59e0b, #10b981, #0e68ab, #a855f7, #d32f2f);
+    background: conic-gradient(#d32f2f, #f59e0b, #10b981, #0e68ab, #a855f7, #d32f2f);
+    -webkit-animation: rgb-rotate 4s linear infinite;
     animation: rgb-rotate 4s linear infinite;
     z-index: 1;
 }
 
-/* Core Face Mask Wall blocking out the background glow center */
 .token-card.clr-M::after {
     content: '';
     position: absolute;
-    inset: 3px; /* Controls exact border width thickness */
+    top: 3px;
+    right: 3px;
+    bottom: 3px;
+    left: 3px;
     background: var(--bg-card);
     border-radius: 7px;
     z-index: 2;
 }
 
-/* Elevate element text structures above background layers */
 .token-card.clr-M > * {
     position: relative;
     z-index: 3;
+}
+
+@-webkit-keyframes rgb-rotate {
+    100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
 }
 
 @keyframes rgb-rotate {
     100% { transform: rotate(360deg); }
 }
 
-/* Performance Isolated Tap Animation States */
+/* Tapped state */
 .token-card.tapped {
+    -webkit-transform: rotate(90deg);
     transform: rotate(90deg);
     opacity: 0.65;
+    -webkit-box-shadow: none;
     box-shadow: none;
 }
 
-.token-card.clr-M.tapped::before {
-    animation: rgb-rotate 4s linear infinite;
-}
-
 .token-header {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: space-between;
+    -ms-flex-pack: justify;
     justify-content: space-between;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
     align-items: center;
 }
 
-.token-title { 
-    font-weight: bold; 
-    font-size: 1.1rem; 
+.token-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    word-break: break-word;
 }
 
 .btn-delete {
@@ -254,28 +433,35 @@ input {
     font-size: 1.1rem;
     padding: 0 5px;
     z-index: 10;
+    font-weight: bold;
 }
 
-.token-pt { 
-    font-size: 1.8rem; 
-    margin: 5px 0; 
-    color: #fff; 
+.token-pt {
+    font-size: 1.8rem;
+    margin: 5px 0;
+    color: #fff;
 }
 
-.counter-badge { 
-    font-size: 0.85rem; 
-    color: #f59e0b; 
-    font-weight: bold; 
+.counter-badge {
+    font-size: 0.85rem;
+    color: #f59e0b;
+    font-weight: bold;
     margin-bottom: 8px;
 }
 
 .token-controls {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
     gap: 5px;
     margin-bottom: 8px;
 }
 
 .btn-sm {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    -ms-flex: 1;
     flex: 1;
     padding: 6px;
     font-size: 0.8rem;
@@ -286,37 +472,47 @@ input {
     cursor: pointer;
     z-index: 10;
 }
-.btn-sm:hover { background: #444; }
 
-.btn-tap { 
-    background-color: #f59e0b; 
-    color: black; 
-    font-weight: bold; 
-    width: 100%; 
-    border: none; 
-    padding: 7px; 
-    border-radius: 4px; 
+.btn-sm:active {
+    background: #444;
+}
+
+.btn-tap {
+    background-color: #f59e0b;
+    color: black;
+    font-weight: bold;
+    width: 100%;
+    border: none;
+    padding: 7px;
+    border-radius: 4px;
     cursor: pointer;
     z-index: 10;
+    -webkit-transition: background-color 0.2s;
+    transition: background-color 0.2s;
 }
 
-/* Autocomplete Dropdown List Overlay Layer Styling */
+.btn-tap:active {
+    background-color: #d97706;
+}
+
+/* Autocomplete */
 .autocomplete-suggestions {
     position: absolute;
-    top: 100%; /* Sits exactly below the parent text input element container */
+    top: 100%;
     left: 0;
     width: 100%;
+    -webkit-box-sizing: border-box;
     box-sizing: border-box;
-    background-color: #2a2a2a; /* Solid contrasting dark gray background */
-    border: 2px solid #444; /* Clean visible boundary lines */
+    background-color: #2a2a2a;
+    border: 2px solid #444;
     border-radius: 6px;
     max-height: 180px;
-    overflow-y: auto; /* Adds custom scroll functionality for multiple card options */
-    z-index: 999999 !important; /* Force layout layers to render over form cards */
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8); /* Thick casting shadows to visually elevate text components */
+    overflow-y: auto;
+    z-index: 999999;
+    -webkit-box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
 }
 
-/* Individual list entries inside the suggestions block container matrix */
 .suggestion-item {
     padding: 12px 16px;
     cursor: pointer;
@@ -330,23 +526,26 @@ input {
     border-bottom: none;
 }
 
-.suggestion-item:hover {
-    background-color: var(--primary); /* Highlights item line blue when hovered */
+.suggestion-item:active {
+    background-color: var(--primary);
     color: white;
 }
 
-/* Image Card Styles */
+/* Card with artwork */
 .token-card.has-art {
     background-size: cover;
     background-position: center;
-    min-height: 240px; 
+    min-height: 240px;
     border-color: rgba(0,0,0,0.4);
 }
 
 .token-card.has-art::before {
     content: '';
     position: absolute;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: rgba(0, 0, 0, 0.65);
     border-radius: 7px;
     z-index: 1;
@@ -368,15 +567,44 @@ input {
     text-shadow: 1px 1px 2px black;
 }
 
-.input-inline input[type="text"] {
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 1rem;
-    height: 42px;
+/* Scrollbar styling */
+.autocomplete-suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.autocomplete-suggestions::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.autocomplete-suggestions::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.token-rules::-webkit-scrollbar {
+    width: 4px;
+}
+
+.token-rules::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.token-rules::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 2px;
+}
+
+/* iOS 9 fixes */
+input:focus,
+select:focus,
+button:focus {
+    outline: none;
+}
+
+/* Remove number input spinners on iOS */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
