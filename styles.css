@@ -50,4 +50,28 @@ html, body {
       background-color: #555;
   }
   
+  .axis-cult-container {
+    text-align: center;
+    margin: 20px 0;
+  }
+  .purify-btn {
+    background-color: #00a2ff;
+    color: white;
+    border: 2px solid #0055ff;
+    padding: 10px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  .aqua-img {
+    display: block;
+    margin: 15px auto;
+    filter: blur(30px); /* Completely unreadable at first */
+    transition: filter 0.5s ease-in-out;
+  }
+  /* Triggered when button is clicked */
+  .aqua-img.revealed {
+    filter: blur(0px);
+  }
+  
   
