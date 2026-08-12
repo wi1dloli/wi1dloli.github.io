@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Add this for iOS 9 image loading -->
+    <meta name="referrer" content="no-referrer">
+    <!-- Add this to allow mixed content if needed -->
+    <meta http-equiv="Content-Security-Policy" content="img-src * data: blob:; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <title>wi1dtrack - MTG Game Tracker</title>
     
     <!-- Polyfills for iOS 9.3.5 -->

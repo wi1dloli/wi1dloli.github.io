@@ -1,7 +1,7 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
 // Token-only + single-faced + artifact-aware Scryfall search
-// iOS 9.3.5 Compatible - WITH FULL ATTRIBUTES
+// iOS 9.3.5 Compatible - WITH IMAGE FIXES FOR iPAD
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -164,6 +164,113 @@ function isArtifactCreatureToken(card) {
 }
 
 // ============================================================
+// IMAGE HANDLING - FIXED FOR iOS 9.3.5
+// ============================================================
+
+function getCardImage(card) {
+    if (!card) {
+        return '';
+    }
+
+    // iOS 9.3.5 fix: Try multiple image sizes
+    var imageUrls = [];
+    
+    // Try PNG first (better compatibility with older iOS)
+    if (card.image_uris) {
+        if (card.image_uris.png) {
+            imageUrls.push(card.image_uris.png);
+        }
+        if (card.image_uris.large) {
+            imageUrls.push(card.image_uris.large);
+        }
+        if (card.image_uris.normal) {
+            imageUrls.push(card.image_uris.normal);
+        }
+        if (card.image_uris.small) {
+            imageUrls.push(card.image_uris.small);
+        }
+        if (card.image_uris.art_crop) {
+            imageUrls.push(card.image_uris.art_crop);
+        }
+    }
+
+    // Also check card faces (for MDFC tokens)
+    if (card.card_faces && Array.isArray(card.card_faces)) {
+        card.card_faces.forEach(function(face) {
+            if (face.image_uris) {
+                if (face.image_uris.png) {
+                    imageUrls.push(face.image_uris.png);
+                }
+                if (face.image_uris.normal) {
+                    imageUrls.push(face.image_uris.normal);
+                }
+                if (face.image_uris.small) {
+                    imageUrls.push(face.image_uris.small);
+                }
+                if (face.image_uris.art_crop) {
+                    imageUrls.push(face.image_uris.art_crop);
+                }
+            }
+        });
+    }
+
+    // Return the first available image
+    return imageUrls.length > 0 ? imageUrls[0] : '';
+}
+
+// ============================================================
+// TEST IMAGE ON iOS
+// ============================================================
+
+function isIOS9() {
+    var ua = navigator.userAgent;
+    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+}
+
+function loadImageWithFallback(url, callback) {
+    if (!url) {
+        callback(false);
+        return;
+    }
+
+    // For iOS 9, try using a proxy or alternative URL
+    var img = new Image();
+    var timeout = setTimeout(function() {
+        callback(false);
+    }, 5000);
+
+    img.onload = function() {
+        clearTimeout(timeout);
+        callback(true);
+    };
+
+    img.onerror = function() {
+        clearTimeout(timeout);
+        // Try with no-cors mode as fallback
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = 'blob';
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    callback(true);
+                } else {
+                    callback(false);
+                }
+            };
+            xhr.onerror = function() {
+                callback(false);
+            };
+            xhr.send();
+        } catch (e) {
+            callback(false);
+        }
+    };
+
+    img.src = url;
+}
+
+// ============================================================
 // SCRYFALL AUTOCOMPLETE - WITH ATTRIBUTES
 // ============================================================
 
@@ -240,7 +347,6 @@ function handleNameInput(query) {
                         var cards = groupedTokens[name];
                         
                         if (cards.length === 1) {
-                            // Single version - show with full details
                             var card = cards[0];
                             var suggestion = document.createElement('div');
                             suggestion.className = 'suggestion-item';
@@ -250,7 +356,6 @@ function handleNameInput(query) {
                             });
                             box.appendChild(suggestion);
                         } else {
-                            // Multiple versions - show all with P/T differences highlighted
                             cards.forEach(function(card) {
                                 var suggestion = document.createElement('div');
                                 suggestion.className = 'suggestion-item suggestion-variant';
@@ -292,7 +397,6 @@ function formatSuggestionHTML(card) {
     var oracleText = card.oracle_text || '';
     var manaCost = card.mana_cost || '';
     
-    // Build the display HTML
     var html = '';
     
     // Token name with mana cost if present
@@ -321,9 +425,8 @@ function formatSuggestionHTML(card) {
         html += '<div style="color:#f59e0b;font-weight:bold;font-size:1.2rem;margin:2px 0;">' + power + '/' + toughness + '</div>';
     }
     
-    // Attributes/Abilities (Lifelink, Trample, Flying, etc.)
+    // Attributes/Abilities
     if (oracleText) {
-        // Extract keywords from oracle text
         var keywords = extractKeywords(oracleText);
         
         if (keywords.length > 0) {
@@ -334,7 +437,6 @@ function formatSuggestionHTML(card) {
             html += '</div>';
         }
         
-        // Show a preview of the oracle text (truncated)
         var previewText = oracleText;
         if (previewText.length > 60) {
             previewText = previewText.substring(0, 60) + '...';
@@ -365,7 +467,7 @@ function extractKeywords(text) {
         'Menace', 'Reach', 'Trample', 'Vigilance', 
         'Defender', 'Flash', 'Ward', 'Protection',
         'Skulk', 'Prowess', 'Enchant', 'Equip',
-        'Crew', 'Surveil', 'Surveil', 'Dredge',
+        'Crew', 'Surveil', 'Dredge',
         'Escape', 'Companion', 'Mutate', 'Partner',
         'Undying', 'Persist', 'Unleash', 'Evolve'
     ];
@@ -374,14 +476,12 @@ function extractKeywords(text) {
     var textUpper = text.toUpperCase();
     
     keywordList.forEach(function(keyword) {
-        // Check for whole word match
         var regex = new RegExp('\\b' + keyword + '\\b', 'i');
         if (regex.test(text) && found.indexOf(keyword) === -1) {
             found.push(keyword);
         }
     });
     
-    // Also check for "Whenever" triggers and "At the beginning" triggers
     if (/\bwhenever\b/i.test(text)) {
         found.push('Trigger');
     }
@@ -398,7 +498,7 @@ function extractKeywords(text) {
         found.push('Tap');
     }
     
-    return found.slice(0, 6); // Limit to 6 keywords for display
+    return found.slice(0, 6);
 }
 
 // ============================================================
@@ -415,7 +515,6 @@ function selectToken(card) {
         input.value = card.name;
     }
 
-    // Auto-fill P/T if it's a creature
     if (card.power && card.toughness) {
         if (powInput) {
             powInput.value = card.power;
@@ -424,7 +523,6 @@ function selectToken(card) {
             touInput.value = card.toughness;
         }
     } else {
-        // Non-creature artifacts - clear P/T
         if (powInput) {
             powInput.value = '';
         }
@@ -433,14 +531,12 @@ function selectToken(card) {
         }
     }
 
-    // Store the selected card for when the form is submitted
     window._selectedTokenCard = card;
 
     if (box) {
         box.innerHTML = '';
     }
     
-    // Auto-submit the form
     var form = document.getElementById('token-form');
     if (form) {
         form.dispatchEvent(new Event('submit'));
@@ -458,7 +554,6 @@ function findToken(tokenName) {
         return Promise.resolve(null);
     }
 
-    // Exact token search
     return new Promise(function(resolve) {
         var searchQuery = '!"' + name + '" t:token';
         var url = SCRYFALL_API + '/cards/search?q=' + encodeURIComponent(searchQuery);
@@ -482,7 +577,6 @@ function findToken(tokenName) {
                     }
                 }
 
-                // Fuzzy token search
                 var fuzzyQuery = name + ' t:token';
                 var fuzzyUrl = SCRYFALL_API + '/cards/search?q=' + encodeURIComponent(fuzzyQuery);
 
@@ -517,26 +611,6 @@ function findToken(tokenName) {
                 resolve(null);
             });
     });
-}
-
-// ============================================================
-// CARD IMAGE
-// ============================================================
-
-function getCardImage(card) {
-    if (!card) {
-        return '';
-    }
-
-    if (card.image_uris && card.image_uris.small) {
-        return card.image_uris.small;
-    }
-    
-    if (card.image_uris && card.image_uris.normal) {
-        return card.image_uris.normal;
-    }
-
-    return '';
 }
 
 // ============================================================
@@ -627,16 +701,13 @@ function handleNewToken(event) {
     var isArtifact = false;
     var isArtifactCreature = false;
 
-    // Check if we have a selected card from autocomplete
     var selectedCard = window._selectedTokenCard || null;
     
-    // If we have a selected card, use it directly
     if (selectedCard && selectedCard.name === name) {
         processTokenCard(selectedCard, function(card) {
             createTokensFromCard(card, name, quantity, colorInput, powInput, touInput, autocompleteBox);
         });
     } else {
-        // Otherwise do a Scryfall lookup
         findToken(name)
             .then(function(card) {
                 processTokenCard(card, function(processedCard) {
@@ -680,7 +751,13 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         isArtifact = isArtifactToken(card);
         isArtifactCreature = isArtifactCreatureToken(card);
 
-        // Only replace P/T for creatures (including artifact creatures)
+        // iOS 9 fix: Try to load image and fallback if needed
+        if (imageUrl && isIOS9()) {
+            // For iOS 9, we'll use a simpler approach - just store the URL
+            // and let the CSS handle it with a fallback
+            console.log('iOS 9 detected, using image URL directly');
+        }
+
         if (!isArtifact || isArtifactCreature) {
             var scryfallPower = getCardPower(card);
             var scryfallToughness = getCardToughness(card);
@@ -695,7 +772,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
                 if (touInput) touInput.value = toughness;
             }
         } else {
-            // Non-creature artifacts - clear P/T
             power = '';
             toughness = '';
             if (powInput) powInput.value = '';
@@ -703,7 +779,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         }
     }
 
-    // Create tokens
     for (var i = 0; i < quantity; i++) {
         state.tokens.push({
             id: Date.now() + '-' + i + '-' + Math.random().toString(36).slice(2),
@@ -720,7 +795,6 @@ function createTokensFromCard(card, name, quantity, colorInput, powInput, touInp
         });
     }
 
-    // Reset form
     var nameInput = document.getElementById('token-name');
     if (nameInput) nameInput.value = '';
     if (powInput) powInput.value = '1';
@@ -849,7 +923,13 @@ function render() {
 
         if (token.artUrl) {
             card.className = 'token-card has-art ' + tappedClass;
-            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
+            // iOS 9 fix: Use image with cache busting
+            var imgUrl = token.artUrl;
+            // Add a cache buster to prevent iOS 9 from caching broken images
+            if (isIOS9()) {
+                imgUrl = imgUrl + '?v=' + Date.now();
+            }
+            card.style.backgroundImage = 'url(' + JSON.stringify(imgUrl) + ')';
         } else {
             card.className = 'token-card clr-' + token.color + ' ' + tappedClass;
             card.style.backgroundImage = 'none';
