@@ -627,6 +627,10 @@ function shouldShowPT(token) {
 // RENDER
 // ============================================================
 
+// ============================================================
+// RENDER - UPDATED WITH WRAPPER
+// ============================================================
+
 function render() {
     var lifeDisplay = document.getElementById('life-display');
     var grid = document.getElementById('token-grid');
@@ -642,6 +646,10 @@ function render() {
     grid.innerHTML = '';
 
     state.tokens.forEach(function(token) {
+        // Create wrapper for proper tap rotation spacing
+        var wrapper = document.createElement('div');
+        wrapper.className = 'token-wrapper';
+        
         var card = document.createElement('div');
 
         var tappedClass = token.tapped ? 'tapped' : '';
@@ -666,10 +674,10 @@ function render() {
             }
         }
 
-        // Add a small indicator for non-creature artifacts
+        // Add artifact badge for non-creature artifacts
         var artifactBadge = '';
         if (token.isArtifact && !token.isArtifactCreature) {
-            artifactBadge = '<div style="font-size:0.7rem;color:#888;margin-bottom:4px;">⚙️ Artifact</div>';
+            artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
         }
 
         card.innerHTML = 
@@ -691,7 +699,8 @@ function render() {
                 (token.tapped ? 'UNTAP' : 'TAP') +
             '</button>';
 
-        grid.appendChild(card);
+        wrapper.appendChild(card);
+        grid.appendChild(wrapper);
     });
 }
 
