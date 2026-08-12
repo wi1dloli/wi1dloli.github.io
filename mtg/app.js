@@ -718,7 +718,7 @@ function shouldShowPT(token) {
 }
 
 // ============================================================
-// RENDER - USING IMG TAG FOR iOS 9
+// RENDER - WITH FALLBACK FOR iOS 9
 // ============================================================
 
 function render() {
@@ -789,9 +789,23 @@ function render() {
 
         // If there's an image, add it as an img tag
         if (token.artUrl) {
+            // Color-coded fallback background
+            var colorMap = {
+                'W': '#f0f2c7',
+                'U': '#0e68ab',
+                'B': '#1c1c1c',
+                'R': '#d32f2f',
+                'G': '#2e7d32',
+                'C': '#757575',
+                'M': '#2a1a4a'
+            };
+            
+            var bgColor = colorMap[token.color] || '#1a1a2e';
+            
             // Add the image as a background element
             var imgWrapper = document.createElement('div');
             imgWrapper.className = 'token-image-wrapper';
+            imgWrapper.style.backgroundColor = bgColor;
             
             var img = document.createElement('img');
             img.className = 'token-image';
@@ -800,10 +814,35 @@ function render() {
             img.setAttribute('crossOrigin', 'anonymous');
             img.setAttribute('referrerPolicy', 'no-referrer');
             
-            // Add error handler for when image fails
+            // Add error handler for when image fails - show fallback with token info
             img.onerror = function() {
-                // If image fails, add a fallback color
-                card.style.backgroundColor = '#1a1a2e';
+                // Hide the broken image
+                this.style.display = 'none';
+                // Show a fallback with token name and color
+                var fallback = document.createElement('div');
+                fallback.className = 'token-fallback';
+                fallback.style.backgroundColor = bgColor;
+                fallback.style.color = '#fff';
+                fallback.style.display = 'flex';
+                fallback.style.alignItems = 'center';
+                fallback.style.justifyContent = 'center';
+                fallback.style.flexDirection = 'column';
+                fallback.style.width = '100%';
+                fallback.style.height = '100%';
+                fallback.style.position = 'absolute';
+                fallback.style.top = '0';
+                fallback.style.left = '0';
+                fallback.style.zIndex = '1';
+                fallback.style.fontSize = '2rem';
+                fallback.style.fontWeight = 'bold';
+                fallback.style.textShadow = '0 0 20px rgba(0,0,0,0.8)';
+                
+                // Show first letter of token name
+                var firstLetter = token.name.charAt(0).toUpperCase();
+                fallback.innerHTML = '<div style="font-size:3rem;opacity:0.8;">' + firstLetter + '</div><div style="font-size:0.7rem;opacity:0.6;">' + token.name + '</div>';
+                
+                // Insert fallback after the image
+                this.parentNode.appendChild(fallback);
             };
             
             imgWrapper.appendChild(img);
