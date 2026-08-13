@@ -1468,68 +1468,13 @@ function initTouchDragEdit() {
 function initializeApp() {
     var grid = document.getElementById('token-grid');
     var nameInput = document.getElementById('token-name');
-    var tokenForm = document.getElementById('token-form');
-    var lifeUp = document.getElementById('life-up');
-    var lifeDown = document.getElementById('life-down');
-    var editToggle = document.getElementById('edit-toggle');
-    var modalClose = document.getElementById('modal-close');
 
-    // Form submit
-    if (tokenForm) {
-        tokenForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleNewToken(e);
-        });
-    }
-
-    // Life buttons
-    if (lifeUp) {
-        lifeUp.addEventListener('click', function() { adjustLife(1); });
-        lifeUp.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            startLifeHold(1);
-        });
-        lifeUp.addEventListener('touchend', function() { stopLifeHold(); });
-        lifeUp.addEventListener('touchcancel', function() { stopLifeHold(); });
-        lifeUp.addEventListener('mousedown', function() { startLifeHold(1); });
-        lifeUp.addEventListener('mouseup', function() { stopLifeHold(); });
-        lifeUp.addEventListener('mouseleave', function() { stopLifeHold(); });
-    }
-
-    if (lifeDown) {
-        lifeDown.addEventListener('click', function() { adjustLife(-1); });
-        lifeDown.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            startLifeHold(-1);
-        });
-        lifeDown.addEventListener('touchend', function() { stopLifeHold(); });
-        lifeDown.addEventListener('touchcancel', function() { stopLifeHold(); });
-        lifeDown.addEventListener('mousedown', function() { startLifeHold(-1); });
-        lifeDown.addEventListener('mouseup', function() { stopLifeHold(); });
-        lifeDown.addEventListener('mouseleave', function() { stopLifeHold(); });
-    }
-
-    // Name input for autocomplete
-    if (nameInput) {
-        nameInput.addEventListener('input', function() {
-            handleNameInput(this.value);
-        });
-        nameInput.addEventListener('keydown', handleNameKeydown);
-    }
-
-    // Edit toggle
-    if (editToggle) {
-        editToggle.addEventListener('click', toggleEditMode);
-    }
-
-    // Modal close
-    if (modalClose) {
-        modalClose.addEventListener('click', closeTokenModal);
-    }
-
-    // Grid click for token buttons
     if (grid) {
         grid.addEventListener('click', handleTokenGridClick);
+    }
+
+    if (nameInput) {
+        nameInput.addEventListener('keydown', handleNameKeydown);
     }
 
     document.addEventListener('click', handleDocumentClick);
@@ -1539,4 +1484,10 @@ function initializeApp() {
     initTouchDragEdit();
 
     render();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
 }

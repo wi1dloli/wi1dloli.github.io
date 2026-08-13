@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Single viewport meta tag with all settings -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- iOS 9 image loading -->
     <meta name="referrer" content="no-referrer">
@@ -14,11 +15,13 @@
     
     <link rel="stylesheet" href="styles.css">
     
+    <!-- Disable double-tap zoom with CSS -->
     <style>
         /* Disable double-tap zoom on iOS */
         * {
             touch-action: manipulation;
         }
+        /* Make rules text scrollable */
         .token-rules-scroll {
             max-height: 40px;
             overflow-y: auto;
@@ -36,203 +39,6 @@
             background: rgba(255,255,255,0.3);
             border-radius: 2px;
         }
-        .btn-edit {
-            background: #2a2a2a;
-            border: 2px solid #444;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-        .btn-edit.active {
-            background: #f59e0b;
-            border-color: #f59e0b;
-            color: #000;
-        }
-        .btn-edit:active {
-            transform: scale(0.95);
-        }
-        .edit-mode .token-card {
-            cursor: grab !important;
-        }
-        .edit-mode .token-card:active {
-            cursor: grabbing !important;
-        }
-        .edit-mode .token-card .btn-sm,
-        .edit-mode .token-card .btn-tap,
-        .edit-mode .token-card .btn-delete {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-        .edit-mode .token-wrapper {
-            border: 2px dashed transparent;
-            transition: all 0.2s ease;
-        }
-        .edit-mode .token-wrapper.drag-over {
-            border-color: #f59e0b;
-            background: rgba(245, 158, 11, 0.1);
-            border-radius: 10px;
-        }
-        .edit-mode .token-wrapper.dragging {
-            opacity: 0.4;
-            transform: scale(0.95);
-        }
-        .edit-mode .drag-handle {
-            display: block !important;
-            position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.5rem;
-            color: rgba(255,255,255,0.3);
-            letter-spacing: 2px;
-            z-index: 20;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        .drag-ghost {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999998;
-            opacity: 0.85;
-            transform: rotate(-5deg) scale(1.05);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-            border-radius: 10px;
-            width: 150px;
-            height: 210px;
-            overflow: hidden;
-        }
-        .token-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999999;
-            padding: 20px;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-        }
-        .token-modal-content {
-            background: #1e1e1e;
-            border-radius: 16px;
-            padding: 20px;
-            max-width: 400px;
-            width: 100%;
-            max-height: 90vh;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-            overflow-y: auto;
-        }
-        .token-modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #ff4757;
-            font-size: 1.8rem;
-            cursor: pointer;
-            z-index: 10;
-            font-weight: bold;
-            line-height: 1;
-        }
-        .token-modal-body .modal-token-card {
-            width: 300px;
-            height: 420px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px 16px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-        .token-modal-body .modal-token-card.has-art {
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
-        .token-modal-body .modal-token-card.has-art::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 12px;
-            z-index: 1;
-        }
-        .token-modal-body .modal-token-card > * {
-            position: relative;
-            z-index: 2;
-        }
-        .modal-token-name {
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-        }
-        .modal-token-pt {
-            font-size: 3rem;
-            font-weight: bold;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-        }
-        .modal-token-type {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.6;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-        }
-        .modal-token-rules {
-            font-size: 0.8rem;
-            font-style: italic;
-            text-align: center;
-            max-height: 120px;
-            overflow-y: auto;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-            padding: 0 10px;
-            line-height: 1.4;
-        }
-        .modal-token-info {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .modal-token-info span {
-            font-size: 0.7rem;
-            opacity: 0.5;
-        }
-        @media (max-width: 500px) {
-            .token-modal-body .modal-token-card {
-                width: 250px;
-                height: 350px;
-                padding: 16px 12px;
-            }
-            .modal-token-name {
-                font-size: 1.2rem;
-            }
-            .modal-token-pt {
-                font-size: 2.4rem;
-            }
-            .modal-token-rules {
-                font-size: 0.7rem;
-                max-height: 80px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -240,16 +46,25 @@
         <h1>wi1dtrack</h1>
     </header>
 
+    <!-- Master Two-Column Grid Layout -->
     <div class="game-layout">
+        
+        <!-- LEFT COLUMN: Token Builder and Display Board Grid -->
         <div class="left-col">
             <div class="card form-card">
                 <h2>Create Tokens</h2>
-                <form id="token-form" autocomplete="off">
+                <form id="token-form" onsubmit="return handleNewToken(event)" autocomplete="off">
+                    
+                    <!-- Token name container with autocomplete -->
                     <div class="form-group" style="position: relative;">
                         <label for="token-name">Token Name</label>
-                        <input type="text" id="token-name" placeholder="e.g., Soldier, Zombie, Treasure" required>
+                        <input type="text" id="token-name" placeholder="e.g., Soldier, Zombie, Treasure" required oninput="handleNameInput(this.value)">
+                        
+                        <!-- Autocomplete Suggestions Panel -->
                         <div id="autocomplete-box" class="autocomplete-suggestions"></div>
                     </div>
+                    
+                    <!-- Inline row for stats -->
                     <div class="compact-row">
                         <div class="input-inline">
                             <label for="token-pow">PWR</label>
@@ -276,36 +91,51 @@
                             </select>
                         </div>
                     </div>
+                    
                     <button type="submit" class="btn btn-primary">Add Tokens</button>
                 </form>
             </div>
-
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <h2 style="margin:0;">Active Tokens</h2>
-                <button id="edit-toggle" class="btn-edit">🔀 Edit</button>
+                <button id="edit-toggle" class="btn-edit" onclick="toggleEditMode()">🔀 Edit</button>
             </div>
             <div id="token-grid" class="token-grid"></div>
+
+            <!-- Token Detail Modal -->
+            <div id="token-modal" class="token-modal" style="display:none;">
+            <div class="token-modal-content">
+            <button class="token-modal-close" onclick="closeTokenModal()">✕</button>
+            <div id="token-modal-body"></div>
+    </div>
+</div>
         </div>
 
+        <!-- RIGHT COLUMN: Sticky Side Panel -->
         <div class="right-col">
             <div class="card life-card sticky-life">
                 <h2>Life</h2>
                 <div class="life-row">
                     <div id="life-display" class="life-display">40</div>
                     <div class="life-controls">
-                        <button class="btn-life" id="life-up">+</button>
-                        <button class="btn-life" id="life-down">-</button>
+                        <button class="btn-life" 
+                            onclick="adjustLife(1)"
+                            onmousedown="startLifeHold(1)" 
+                            onmouseup="stopLifeHold()" 
+                            onmouseleave="stopLifeHold()"
+                            ontouchstart="startLifeHold(1)" 
+                            ontouchend="stopLifeHold()" 
+                            ontouchcancel="stopLifeHold()">+</button>
+                        <button class="btn-life" 
+                            onclick="adjustLife(-1)"
+                            onmousedown="startLifeHold(-1)" 
+                            onmouseup="stopLifeHold()" 
+                            onmouseleave="stopLifeHold()"
+                            ontouchstart="startLifeHold(-1)" 
+                            ontouchend="stopLifeHold()" 
+                            ontouchcancel="stopLifeHold()">-</button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Token Detail Modal -->
-    <div id="token-modal" class="token-modal" style="display:none;">
-        <div class="token-modal-content">
-            <button class="token-modal-close" id="modal-close">✕</button>
-            <div id="token-modal-body"></div>
         </div>
     </div>
 
