@@ -1,6 +1,6 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
-// iOS 9.3.5 Compatible - IMG TAG APPROACH
+// iOS 9.3.5 Compatible - FINAL VERSION
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -22,7 +22,7 @@ if (!Array.prototype.find) {
             throw new TypeError('Array.prototype.find called on null or undefined');
         }
         if (typeof predicate !== 'function') {
-            throw new TypeError('predicate must be function');
+            throw new TypeError('predicate must be a function');
         }
         var list = Object(this);
         var length = list.length >>> 0;
@@ -160,24 +160,27 @@ function getCardImage(card) {
         return '';
     }
 
-    // Try PNG first (better for iOS 9)
-    if (card.image_uris && card.image_uris.png) {
-        return card.image_uris.png;
-    }
+    var imageUrls = [];
     
-    if (card.image_uris && card.image_uris.normal) {
-        return card.image_uris.normal;
-    }
-    
-    if (card.image_uris && card.image_uris.small) {
-        return card.image_uris.small;
-    }
-    
-    if (card.image_uris && card.image_uris.art_crop) {
-        return card.image_uris.art_crop;
+    if (card.image_uris) {
+        if (card.image_uris.png) {
+            imageUrls.push(card.image_uris.png);
+        }
+        if (card.image_uris.large) {
+            imageUrls.push(card.image_uris.large);
+        }
+        if (card.image_uris.normal) {
+            imageUrls.push(card.image_uris.normal);
+        }
+        if (card.image_uris.small) {
+            imageUrls.push(card.image_uris.small);
+        }
+        if (card.image_uris.art_crop) {
+            imageUrls.push(card.image_uris.art_crop);
+        }
     }
 
-    return '';
+    return imageUrls.length > 0 ? imageUrls[0] : '';
 }
 
 // ============================================================
@@ -718,31 +721,82 @@ function shouldShowPT(token) {
 }
 
 // ============================================================
-// RENDER - WITH FALLBACK FOR iOS 9
+// RENDER - CLEAN WITH RANDOM COLORS
 // ============================================================
 
-// ============================================================
-// RENDER - NO IMAGES, JUST STYLIZED TOKENS FOR iOS 9
-// ============================================================
+// Array of random color themes for tokens
+var RANDOM_COLORS = [
+    { bg: '#1a1a2e', text: '#ffffff', border: '#4a4a6a', accent: '#6a4a8a' },
+    { bg: '#2d1b1b', text: '#ffffff', border: '#5a3a3a', accent: '#8a4a4a' },
+    { bg: '#1b2d1b', text: '#ffffff', border: '#3a5a3a', accent: '#4a8a4a' },
+    { bg: '#1b1b2d', text: '#ffffff', border: '#3a3a5a', accent: '#4a4a8a' },
+    { bg: '#2d2d1b', text: '#ffffff', border: '#5a5a3a', accent: '#8a8a4a' },
+    { bg: '#1b2d2d', text: '#ffffff', border: '#3a5a5a', accent: '#4a8a8a' },
+    { bg: '#2d1b2d', text: '#ffffff', border: '#5a3a5a', accent: '#8a4a8a' },
+    { bg: '#1a1a1a', text: '#ffffff', border: '#4a4a4a', accent: '#6a6a6a' },
+    { bg: '#2a1a1a', text: '#ffffff', border: '#5a3a3a', accent: '#8a5a5a' },
+    { bg: '#1a2a1a', text: '#ffffff', border: '#3a5a3a', accent: '#5a8a5a' },
+    { bg: '#1a1a2a', text: '#ffffff', border: '#3a3a5a', accent: '#5a5a8a' },
+    { bg: '#2a2a1a', text: '#ffffff', border: '#5a5a3a', accent: '#8a8a5a' },
+    { bg: '#1a2a2a', text: '#ffffff', border: '#3a5a5a', accent: '#5a8a8a' },
+    { bg: '#2a1a2a', text: '#ffffff', border: '#5a3a5a', accent: '#8a5a8a' },
+    { bg: '#2a1515', text: '#ffffff', border: '#5a2a2a', accent: '#8a4a4a' },
+    { bg: '#152a15', text: '#ffffff', border: '#2a5a2a', accent: '#4a8a4a' },
+    { bg: '#15152a', text: '#ffffff', border: '#2a2a5a', accent: '#4a4a8a' },
+    { bg: '#2a2a15', text: '#ffffff', border: '#5a5a2a', accent: '#8a8a4a' },
+    { bg: '#152a2a', text: '#ffffff', border: '#2a5a5a', accent: '#4a8a8a' },
+    { bg: '#2a152a', text: '#ffffff', border: '#5a2a5a', accent: '#8a4a8a' }
+];
 
-// ============================================================
-// RENDER - HYBRID: Images on PC, Fallback on iOS 9
-// ============================================================
-
-// Detect iOS 9
-function isIOS9() {
-    var ua = navigator.userAgent || '';
-    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+// Get a random color theme for a token (consistent per token)
+function getTokenColor(token) {
+    // Use token id to get consistent color for each token
+    var hash = 0;
+    for (var i = 0; i < token.id.length; i++) {
+        hash = ((hash << 5) - hash) + token.id.charCodeAt(i);
+        hash = hash & hash;
+    }
+    var index = Math.abs(hash) % RANDOM_COLORS.length;
+    return RANDOM_COLORS[index];
 }
 
 // ============================================================
-// RENDER - WITH MTG CARD FRAME STYLE FALLBACK
+// RENDER - CLEAN & CONSISTENT
 // ============================================================
 
-// Detect iOS 9
-function isIOS9() {
-    var ua = navigator.userAgent || '';
-    return /iPad|iPhone|iPod/.test(ua) && /OS 9_/.test(ua);
+// Array of random color themes for tokens
+var RANDOM_COLORS = [
+    { bg: '#1a1a2e', text: '#ffffff', border: '#4a4a6a', accent: '#6a4a8a' },
+    { bg: '#2d1b1b', text: '#ffffff', border: '#5a3a3a', accent: '#8a4a4a' },
+    { bg: '#1b2d1b', text: '#ffffff', border: '#3a5a3a', accent: '#4a8a4a' },
+    { bg: '#1b1b2d', text: '#ffffff', border: '#3a3a5a', accent: '#4a4a8a' },
+    { bg: '#2d2d1b', text: '#ffffff', border: '#5a5a3a', accent: '#8a8a4a' },
+    { bg: '#1b2d2d', text: '#ffffff', border: '#3a5a5a', accent: '#4a8a8a' },
+    { bg: '#2d1b2d', text: '#ffffff', border: '#5a3a5a', accent: '#8a4a8a' },
+    { bg: '#1a1a1a', text: '#ffffff', border: '#4a4a4a', accent: '#6a6a6a' },
+    { bg: '#2a1a1a', text: '#ffffff', border: '#5a3a3a', accent: '#8a5a5a' },
+    { bg: '#1a2a1a', text: '#ffffff', border: '#3a5a3a', accent: '#5a8a5a' },
+    { bg: '#1a1a2a', text: '#ffffff', border: '#3a3a5a', accent: '#5a5a8a' },
+    { bg: '#2a2a1a', text: '#ffffff', border: '#5a5a3a', accent: '#8a8a5a' },
+    { bg: '#1a2a2a', text: '#ffffff', border: '#3a5a5a', accent: '#5a8a8a' },
+    { bg: '#2a1a2a', text: '#ffffff', border: '#5a3a5a', accent: '#8a5a8a' },
+    { bg: '#2a1515', text: '#ffffff', border: '#5a2a2a', accent: '#8a4a4a' },
+    { bg: '#152a15', text: '#ffffff', border: '#2a5a2a', accent: '#4a8a4a' },
+    { bg: '#15152a', text: '#ffffff', border: '#2a2a5a', accent: '#4a4a8a' },
+    { bg: '#2a2a15', text: '#ffffff', border: '#5a5a2a', accent: '#8a8a4a' },
+    { bg: '#152a2a', text: '#ffffff', border: '#2a5a5a', accent: '#4a8a8a' },
+    { bg: '#2a152a', text: '#ffffff', border: '#5a2a5a', accent: '#8a4a8a' }
+];
+
+// Get a random color theme for a token (consistent per token)
+function getTokenColor(token) {
+    var hash = 0;
+    for (var i = 0; i < token.id.length; i++) {
+        hash = ((hash << 5) - hash) + token.id.charCodeAt(i);
+        hash = hash & hash;
+    }
+    var index = Math.abs(hash) % RANDOM_COLORS.length;
+    return RANDOM_COLORS[index];
 }
 
 function render() {
@@ -759,8 +813,6 @@ function render() {
 
     grid.innerHTML = '';
 
-    var iOS9 = isIOS9();
-
     state.tokens.forEach(function(token) {
         var wrapper = document.createElement('div');
         wrapper.className = 'token-wrapper';
@@ -769,126 +821,158 @@ function render() {
 
         var tappedClass = token.tapped ? 'tapped' : '';
 
-        // Color map for fallback - MTG colors
-        var colorMap = {
-            'W': { bg: '#f5f0dc', text: '#000000', border: '#d4c9a8', accent: '#f5e6b8' },
-            'U': { bg: '#0e4b7a', text: '#ffffff', border: '#0a3a5e', accent: '#1a6a9a' },
-            'B': { bg: '#1a1a1a', text: '#ffffff', border: '#0d0d0d', accent: '#2a2a2a' },
-            'R': { bg: '#8b1a1a', text: '#ffffff', border: '#6a1414', accent: '#aa2a2a' },
-            'G': { bg: '#1a5a1a', text: '#ffffff', border: '#144a14', accent: '#2a7a2a' },
-            'C': { bg: '#4a4a4a', text: '#ffffff', border: '#3a3a3a', accent: '#5a5a5a' },
-            'M': { bg: '#2a1a4a', text: '#ffffff', border: '#1a0a3a', accent: '#4a2a6a' }
-        };
+        // Get random color for this token
+        var colors = getTokenColor(token);
+        var bgColor = colors.bg;
+        var textColor = colors.text;
+        var borderColor = colors.border;
+        var accentColor = colors.accent;
 
-        // If on iOS 9 OR no image URL, use fallback
-        if (iOS9 || !token.artUrl) {
-            var colors = colorMap[token.color] || colorMap['C'];
-            var bgColor = colors.bg;
-            var textColor = colors.text;
-            var borderColor = colors.border;
-            var accentColor = colors.accent;
+        // Build P/T
+        var ptDisplay = '';
+        if (shouldShowPT(token)) {
+            var power = getDisplayedStat(token.pow, token.counters);
+            var toughness = getDisplayedStat(token.tou, token.counters);
+            if (power !== '' && toughness !== '') {
+                ptDisplay = '<div style="font-size:1.8rem;font-weight:bold;color:' + textColor + ';text-shadow:0 1px 4px rgba(0,0,0,0.3);">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
+            }
+        }
 
-            card.className = 'token-card fallback-card ' + tappedClass;
+        // Artifact badge
+        var artifactBadge = '';
+        if (token.isArtifact && !token.isArtifactCreature) {
+            artifactBadge = '<div style="font-size:0.6rem;color:' + textColor + ';opacity:0.5;margin-bottom:2px;">⚙️ Artifact</div>';
+        }
+
+        // Rules text - clean and simple
+        var rulesDisplay = '';
+        if (token.rules && token.rules.length > 0) {
+            var maxLength = 70;
+            var displayText = token.rules;
+            if (displayText.length > maxLength) {
+                displayText = displayText.substring(0, maxLength) + '...';
+            }
+            rulesDisplay = '<div style="font-size:0.6rem;color:' + textColor + ';opacity:0.5;font-style:italic;text-align:center;margin:2px 4px;line-height:1.2;max-height:30px;overflow:hidden;">' + escapeHtml(displayText) + '</div>';
+        }
+
+        // Type line
+        var typeLine = '';
+        if (token.isArtifact && token.isArtifactCreature) {
+            typeLine = 'Artifact Creature Token';
+        } else if (token.isArtifact) {
+            typeLine = 'Artifact Token';
+        } else if (token.pow && token.tou) {
+            typeLine = 'Token Creature';
+        }
+
+        // Check if we should use image or fallback
+        var useImage = token.artUrl && token.artUrl.length > 0;
+
+        if (useImage) {
+            // Try to use image
+            card.className = 'token-card has-art ' + tappedClass;
+            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
             card.style.backgroundColor = bgColor;
-            card.style.borderColor = borderColor;
-            card.style.borderWidth = '3px';
-            card.style.borderStyle = 'solid';
-            card.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.3), 0 4px 15px rgba(0,0,0,0.5)';
-
-            // Build P/T
-            var ptDisplay = '';
-            if (shouldShowPT(token)) {
-                var power = getDisplayedStat(token.pow, token.counters);
-                var toughness = getDisplayedStat(token.tou, token.counters);
-                if (power !== '' && toughness !== '') {
-                    ptDisplay = '<div class="token-pt" style="color:' + textColor + ';background:rgba(0,0,0,0.3);padding:2px 12px;border-radius:4px;display:inline-block;">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
-                }
-            }
-
-            var artifactBadge = '';
-            if (token.isArtifact && !token.isArtifactCreature) {
-                artifactBadge = '<div class="artifact-badge" style="color:' + textColor + ';opacity:0.7;">⚙️ Artifact</div>';
-            }
-
-            // Token type line
-            var typeLine = token.isArtifact ? 'Artifact Token' : 'Token Creature';
-            if (token.isArtifact && token.isArtifactCreature) {
-                typeLine = 'Artifact Creature Token';
-            }
-
+            card.style.backgroundSize = 'cover';
+            card.style.backgroundPosition = 'center';
+            card.style.padding = '10px 10px';
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.height = '210px';
+            card.style.borderRadius = '10px';
+            card.style.border = '3px solid ' + accentColor;
+            
+            // Content on top of image
             card.innerHTML = 
-                // Top bar with name and delete
-                '<div class="token-header" style="border-bottom:2px solid ' + borderColor + ';padding-bottom:4px;">' +
-                    '<span class="token-title" style="color:' + textColor + ';font-size:0.95rem;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);">' + escapeHtml(token.name) + '</span>' +
-                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" style="color:#ff6b6b;font-size:1.2rem;background:none;border:none;cursor:pointer;">✕</button>' +
+                // Header with name and delete
+                '<div style="display:flex;justify-content:space-between;align-items:flex-start;z-index:2;position:relative;">' +
+                    '<span style="color:#fff;font-weight:bold;font-size:0.9rem;text-shadow:0 0 8px rgba(0,0,0,0.9);">' + escapeHtml(token.name) + '</span>' +
+                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" style="color:#ff6b6b;background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0 3px;z-index:10;">✕</button>' +
                 '</div>' +
-                // Center - Big mana symbol style letter
-                '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 0;">' +
-                    '<div style="font-size:4.5rem;font-weight:bold;color:' + textColor + ';opacity:0.25;text-shadow:0 0 40px rgba(255,255,255,0.1);font-family:serif;">' + token.name.charAt(0).toUpperCase() + '</div>' +
-                    '<div style="font-size:0.65rem;color:' + textColor + ';opacity:0.5;letter-spacing:1px;text-transform:uppercase;">' + typeLine + '</div>' +
+                // Center - P/T and type
+                '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:2;position:relative;">' +
+                    ptDisplay +
+                    artifactBadge +
+                    '<div style="font-size:0.55rem;color:#fff;opacity:0.4;letter-spacing:1px;text-transform:uppercase;text-shadow:0 0 8px rgba(0,0,0,0.9);">' + typeLine + '</div>' +
                 '</div>' +
-                // Bottom section with P/T, counters, buttons
-                '<div style="border-top:2px solid ' + borderColor + ';padding-top:4px;">' +
-                    '<div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0;">' +
-                        '<div style="flex:1;text-align:center;">' + ptDisplay + '</div>' +
-                        '<div style="flex:1;text-align:center;">' + artifactBadge + '</div>' +
+                // Bottom - Rules, counters, buttons
+                '<div style="z-index:2;position:relative;">' +
+                    rulesDisplay +
+                    '<div style="color:#f59e0b;text-align:center;font-size:0.7rem;font-weight:bold;margin:2px 0;text-shadow:0 0 8px rgba(0,0,0,0.9);">' + token.counters + ' Counters</div>' +
+                    '<div style="display:flex;gap:6px;margin:4px 0;">' +
+                        '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:5px 8px;font-size:0.75rem;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:#fff;cursor:pointer;font-weight:bold;">-1</button>' +
+                        '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:5px 8px;font-size:0.75rem;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:4px;color:#fff;cursor:pointer;font-weight:bold;">+1</button>' +
                     '</div>' +
-                    '<div class="token-rules" style="color:' + textColor + ';opacity:0.7;font-size:0.6rem;font-style:italic;text-align:center;margin:2px 0;">' + escapeHtml(token.rules || '') + '</div>' +
-                    '<div class="counter-badge" style="color:' + textColor + ';text-align:center;font-size:0.7rem;font-weight:bold;margin:2px 0;">' + token.counters + ' Counters</div>' +
-                    '<div class="token-controls" style="display:flex;gap:4px;margin:2px 0;">' +
-                        '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:3px;font-size:0.7rem;background:rgba(255,255,255,0.15);border:1px solid ' + borderColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;">-1</button>' +
-                        '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:3px;font-size:0.7rem;background:rgba(255,255,255,0.15);border:1px solid ' + borderColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;">+1</button>' +
-                    '</div>' +
-                    '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="width:100%;padding:4px;margin-top:2px;border:none;border-radius:4px;font-size:0.7rem;font-weight:bold;background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';cursor:pointer;">' +
+                    '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="width:100%;padding:6px;margin-top:2px;border:none;border-radius:4px;font-size:0.7rem;font-weight:bold;background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';cursor:pointer;">' +
                         (token.tapped ? 'UNTAP' : 'TAP') +
                     '</button>' +
                 '</div>';
 
+            // Check if image loads
+            var imgCheck = new Image();
+            imgCheck.onerror = function() {
+                renderCleanFallback(card, token, tappedClass, colors, ptDisplay, artifactBadge, rulesDisplay, typeLine);
+            };
+            imgCheck.src = token.artUrl;
+
         } else {
-            // --- IMAGE MODE (PC and modern devices) ---
-            card.className = 'token-card has-art ' + tappedClass;
-            card.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
-            card.style.backgroundColor = '#1a1a2e';
-            card.style.padding = '10px 8px';
-            card.style.display = 'flex';
-            card.style.flexDirection = 'column';
-            card.style.justifyContent = 'space-between';
-
-            var ptDisplay = '';
-            if (shouldShowPT(token)) {
-                var power = getDisplayedStat(token.pow, token.counters);
-                var toughness = getDisplayedStat(token.tou, token.counters);
-                if (power !== '' && toughness !== '') {
-                    ptDisplay = '<div class="token-pt">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
-                }
-            }
-
-            var artifactBadge = '';
-            if (token.isArtifact && !token.isArtifactCreature) {
-                artifactBadge = '<div class="artifact-badge">⚙️ Artifact</div>';
-            }
-
-            card.innerHTML = 
-                '<div class="token-header">' +
-                    '<span class="token-title">' + escapeHtml(token.name) + '</span>' +
-                    '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '">✕</button>' +
-                '</div>' +
-                ptDisplay +
-                artifactBadge +
-                '<div class="token-rules">' + escapeHtml(token.rules || '') + '</div>' +
-                '<div class="counter-badge">' + token.counters + ' Counters</div>' +
-                '<div class="token-controls">' +
-                    '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '">-1</button>' +
-                    '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '">+1</button>' +
-                '</div>' +
-                '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '">' +
-                    (token.tapped ? 'UNTAP' : 'TAP') +
-                '</button>';
+            // No image - use clean fallback
+            renderCleanFallback(card, token, tappedClass, colors, ptDisplay, artifactBadge, rulesDisplay, typeLine);
         }
 
         wrapper.appendChild(card);
         grid.appendChild(wrapper);
     });
+}
+
+// ============================================================
+// RENDER CLEAN FALLBACK - FIXED
+// ============================================================
+
+function renderCleanFallback(card, token, tappedClass, colors, ptDisplay, artifactBadge, rulesDisplay, typeLine) {
+    var bgColor = colors.bg;
+    var textColor = colors.text;
+    var borderColor = colors.border;
+    var accentColor = colors.accent;
+
+    card.className = 'token-card fallback-card ' + tappedClass;
+    card.style.backgroundColor = bgColor;
+    card.style.borderColor = accentColor;
+    card.style.borderWidth = '3px';
+    card.style.borderStyle = 'solid';
+    card.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.3), 0 4px 15px rgba(0,0,0,0.5)';
+    card.style.padding = '10px 10px';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.height = '210px';
+    card.style.borderRadius = '10px';
+    card.style.backgroundImage = 'none';
+
+    // Build the clean fallback card
+    card.innerHTML = 
+        // Header with name and delete
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+            '<span style="color:' + textColor + ';font-weight:bold;font-size:0.9rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">' + escapeHtml(token.name) + '</span>' +
+            '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" style="color:#ff6b6b;background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0 3px;">✕</button>' +
+        '</div>' +
+        // Center - P/T and type
+        '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">' +
+            ptDisplay +
+            artifactBadge +
+            '<div style="font-size:0.55rem;color:' + textColor + ';opacity:0.3;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">' + typeLine + '</div>' +
+        '</div>' +
+        // Bottom - Rules, counters, buttons (fixed alignment)
+        '<div style="display:flex;flex-direction:column;justify-content:flex-end;min-height:80px;">' +
+            rulesDisplay +
+            '<div style="color:' + textColor + ';text-align:center;font-size:0.7rem;font-weight:bold;margin:2px 0;opacity:0.7;">' + token.counters + ' Counters</div>' +
+            '<div style="display:flex;gap:6px;margin:4px 0;">' +
+                '<button type="button" class="btn-sm" data-action="counter-down" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:5px 8px;font-size:0.75rem;background:rgba(255,255,255,0.1);border:1px solid ' + accentColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;font-weight:bold;">-1</button>' +
+                '<button type="button" class="btn-sm" data-action="counter-up" data-id="' + escapeHtml(token.id) + '" style="flex:1;padding:5px 8px;font-size:0.75rem;background:rgba(255,255,255,0.1);border:1px solid ' + accentColor + ';border-radius:4px;color:' + textColor + ';cursor:pointer;font-weight:bold;">+1</button>' +
+            '</div>' +
+            '<button type="button" class="btn-tap" data-action="tap" data-id="' + escapeHtml(token.id) + '" style="width:100%;padding:6px;margin-top:2px;border:none;border-radius:4px;font-size:0.7rem;font-weight:bold;background:' + (token.tapped ? '#666' : '#f59e0b') + ';color:' + (token.tapped ? '#fff' : '#000') + ';cursor:pointer;">' +
+                (token.tapped ? 'UNTAP' : 'TAP') +
+            '</button>' +
+        '</div>';
 }
 
 // ============================================================
