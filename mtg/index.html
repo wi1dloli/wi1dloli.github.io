@@ -2,17 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Single viewport meta tag with all settings -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- iOS 9 image loading -->
     <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Content-Security-Policy" content="img-src https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * data: blob:; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src-elem https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * 'unsafe-inline' 'unsafe-eval' data: blob:;style-src-elem https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * 'unsafe-inline' 'unsafe-eval' data: blob:;connect-src https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * 'unsafe-inline' 'unsafe-eval' data: blob:;child-src https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * 'unsafe-inline' 'unsafe-eval' data: blob:;frame-src https://gc.kis.v2.scr.kaspersky-labs.com wss://gc.kis.v2.scr.kaspersky-labs.com * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <meta http-equiv="Content-Security-Policy" content="img-src * data: blob:; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <title>wi1dtrack - MTG Game Tracker</title>
     
     <!-- Polyfills for iOS 9.3.5 -->
-    <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Ve37o_ZgaiSAx2WB2dyysKsX_AKflqXoOicD9uoHpQ5eurdlEgFFnUBZU9gwM9H5KhgCBe14mwWxyAL-17ZPmw" charset="UTF-8"></script><script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.6.2/dist/fetch.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8.2.3/dist/polyfill.min.js"></script>
     
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Disable double-tap zoom with CSS -->
+    <style>
+        /* Disable double-tap zoom on iOS */
+        * {
+            touch-action: manipulation;
+        }
+        /* Make rules text scrollable */
+        .token-rules-scroll {
+            max-height: 40px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        .token-rules-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+        .token-rules-scroll::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+        .token-rules-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -71,6 +98,14 @@
 
             <h2>Active Tokens</h2>
             <div id="token-grid" class="token-grid"></div>
+
+            <!-- Token Detail Modal -->
+            <div id="token-modal" class="token-modal" style="display:none;">
+            <div class="token-modal-content">
+            <button class="token-modal-close" onclick="closeTokenModal()">✕</button>
+            <div id="token-modal-body"></div>
+    </div>
+</div>
         </div>
 
         <!-- RIGHT COLUMN: Sticky Side Panel -->
@@ -80,13 +115,26 @@
                 <div class="life-row">
                     <div id="life-display" class="life-display">40</div>
                     <div class="life-controls">
-                        <button class="btn-life" onclick="adjustLife(1)">+</button>
-                        <button class="btn-life" onclick="adjustLife(-1)">-</button>
+                        <button class="btn-life" 
+                            onclick="adjustLife(1)"
+                            onmousedown="startLifeHold(1)" 
+                            onmouseup="stopLifeHold()" 
+                            onmouseleave="stopLifeHold()"
+                            ontouchstart="startLifeHold(1)" 
+                            ontouchend="stopLifeHold()" 
+                            ontouchcancel="stopLifeHold()">+</button>
+                        <button class="btn-life" 
+                            onclick="adjustLife(-1)"
+                            onmousedown="startLifeHold(-1)" 
+                            onmouseup="stopLifeHold()" 
+                            onmouseleave="stopLifeHold()"
+                            ontouchstart="startLifeHold(-1)" 
+                            ontouchend="stopLifeHold()" 
+                            ontouchcancel="stopLifeHold()">-</button>
                     </div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="app.js"></script>

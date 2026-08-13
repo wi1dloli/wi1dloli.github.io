@@ -1,6 +1,6 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
-// iOS 9.3.5 Compatible - FINAL VERSION (NO BIG LETTER)
+// iOS 9.3.5 Compatible - WITH MODAL
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -758,6 +758,120 @@ function getTokenColor(token) {
 }
 
 // ============================================================
+// FAST LIFE ADJUSTMENT - PRESS AND HOLD
+// ============================================================
+
+var lifeHoldInterval = null;
+var lifeHoldTimeout = null;
+
+function startLifeHold(amount) {
+    clearInterval(lifeHoldInterval);
+    clearTimeout(lifeHoldTimeout);
+    
+    lifeHoldTimeout = setTimeout(function() {
+        adjustLife(amount);
+        lifeHoldInterval = setInterval(function() {
+            adjustLife(amount);
+        }, 100);
+    }, 200);
+}
+
+function stopLifeHold() {
+    clearInterval(lifeHoldInterval);
+    clearTimeout(lifeHoldTimeout);
+    lifeHoldInterval = null;
+    lifeHoldTimeout = null;
+}
+
+// ============================================================
+// TOKEN MODAL - Enlarged View
+// ============================================================
+
+function openTokenModal(tokenId) {
+    var modal = document.getElementById('token-modal');
+    var body = document.getElementById('token-modal-body');
+    
+    if (!modal || !body) return;
+    
+    var token = state.tokens.find(function(t) {
+        return t.id === tokenId;
+    });
+    
+    if (!token) return;
+    
+    var colors = getTokenColor(token);
+    var bgColor = colors.bg;
+    var textColor = colors.text;
+    var accentColor = colors.accent;
+    
+    var ptDisplay = '';
+    if (shouldShowPT(token)) {
+        var power = getDisplayedStat(token.pow, token.counters);
+        var toughness = getDisplayedStat(token.tou, token.counters);
+        if (power !== '' && toughness !== '') {
+            ptDisplay = '<div class="modal-token-pt" style="color:' + textColor + ';">' + escapeHtml(power) + '/' + escapeHtml(toughness) + '</div>';
+        }
+    }
+    
+    var typeLine = '';
+    if (token.isArtifact && token.isArtifactCreature) {
+        typeLine = 'Artifact Creature Token';
+    } else if (token.isArtifact) {
+        typeLine = 'Artifact Token';
+    } else if (token.pow && token.tou) {
+        typeLine = 'Token Creature';
+    }
+    
+    var artifactBadge = '';
+    if (token.isArtifact && !token.isArtifactCreature) {
+        artifactBadge = '⚙️ Artifact • ';
+    }
+    
+    var cardClass = 'modal-token-card';
+    var styleAttr = 'background-color:' + bgColor + ';border:3px solid ' + accentColor + ';';
+    
+    if (token.artUrl) {
+        cardClass += ' has-art';
+        styleAttr += 'background-image:url(' + JSON.stringify(token.artUrl) + ');';
+    }
+    
+    body.innerHTML = 
+        '<div class="' + cardClass + '" style="' + styleAttr + '">' +
+            '<div class="modal-token-name" style="color:' + textColor + ';">' + escapeHtml(token.name) + '</div>' +
+            '<div style="display:flex;flex-direction:column;align-items:center;">' +
+                ptDisplay +
+                '<div class="modal-token-type" style="color:' + textColor + ';">' + typeLine + '</div>' +
+            '</div>' +
+            '<div class="modal-token-rules" style="color:' + textColor + ';">' + escapeHtml(token.rules || 'No abilities') + '</div>' +
+            '<div class="modal-token-info">' +
+                '<span style="color:' + textColor + ';">' + artifactBadge + token.counters + ' Counters</span>' +
+                '<span style="color:' + textColor + ';">' + (token.tapped ? '🔒 Tapped' : '🔓 Untapped') + '</span>' +
+            '</div>' +
+        '</div>';
+    
+    modal.style.display = 'flex';
+    
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            closeTokenModal();
+        }
+    };
+}
+
+function closeTokenModal() {
+    var modal = document.getElementById('token-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeTokenModal();
+    }
+});
+
+// ============================================================
 // RENDER
 // ============================================================
 
@@ -804,14 +918,9 @@ function render() {
 
         var rulesDisplay = '';
         if (token.rules && token.rules.length > 0) {
-            var maxLength = 70;
-            var displayText = token.rules;
-            if (displayText.length > maxLength) {
-                displayText = displayText.substring(0, maxLength) + '...';
-            }
-            rulesDisplay = '<div style="font-size:0.6rem;color:' + textColor + ';opacity:0.5;font-style:italic;text-align:center;margin:2px 4px;line-height:1.2;max-height:30px;overflow:hidden;">' + escapeHtml(displayText) + '</div>';
+            rulesDisplay = '<div class="token-rules-scroll" style="font-size:0.6rem;color:' + textColor + ';opacity:0.6;font-style:italic;text-align:center;margin:2px 4px;line-height:1.2;max-height:40px;overflow-y:auto;padding:0 4px;">' + escapeHtml(token.rules) + '</div>';
         }
-
+        
         var typeLine = '';
         if (token.isArtifact && token.isArtifactCreature) {
             typeLine = 'Artifact Creature Token';
@@ -868,6 +977,16 @@ function render() {
             renderCleanFallback(card, token, tappedClass, colors, ptDisplay, artifactBadge, rulesDisplay, typeLine);
         }
 
+        // Make the card clickable to open modal
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+            // Don't open modal if they clicked a button
+            if (e.target.closest('button')) {
+                return;
+            }
+            openTokenModal(token.id);
+        });
+
         wrapper.appendChild(card);
         grid.appendChild(wrapper);
     });
@@ -895,20 +1014,16 @@ function renderCleanFallback(card, token, tappedClass, colors, ptDisplay, artifa
     card.style.borderRadius = '10px';
     card.style.backgroundImage = 'none';
 
-    // NO BIG LETTER - just name, P/T, type, and buttons
     card.innerHTML = 
-        // Header with name and delete
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
             '<span style="color:' + textColor + ';font-weight:bold;font-size:0.9rem;text-shadow:0 1px 3px rgba(0,0,0,0.3);">' + escapeHtml(token.name) + '</span>' +
             '<button type="button" class="btn-delete" data-action="delete" data-id="' + escapeHtml(token.id) + '" style="color:#ff6b6b;background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0 3px;">✕</button>' +
         '</div>' +
-        // Center - Just P/T and type (NO BIG LETTER)
         '<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;">' +
             ptDisplay +
             artifactBadge +
             '<div style="font-size:0.55rem;color:' + textColor + ';opacity:0.3;letter-spacing:1px;text-transform:uppercase;margin-top:2px;">' + typeLine + '</div>' +
         '</div>' +
-        // Bottom - Rules, counters, buttons
         '<div style="display:flex;flex-direction:column;justify-content:flex-end;min-height:80px;">' +
             rulesDisplay +
             '<div style="color:' + textColor + ';text-align:center;font-size:0.7rem;font-weight:bold;margin:2px 0;opacity:0.7;">' + token.counters + ' Counters</div>' +
