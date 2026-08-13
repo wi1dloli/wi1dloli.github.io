@@ -943,3 +943,210 @@ input[type="number"]::-webkit-inner-spin-button {
         max-height: 80px;
     }
 }
+
+/* ============================================================
+   DRAG AND DROP
+   ============================================================ */
+
+.token-wrapper.dragging {
+    opacity: 0.4;
+    -webkit-transform: scale(0.95);
+    transform: scale(0.95);
+}
+
+.token-wrapper.drag-over {
+    -webkit-transform: scale(1.05);
+    transform: scale(1.05);
+    border: 2px dashed #f59e0b;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.token-wrapper.drag-over .token-card {
+    opacity: 0.6;
+}
+
+.token-wrapper .token-card {
+    cursor: grab;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.token-wrapper .token-card:active {
+    cursor: grabbing;
+}
+
+/* Touch drag indicator */
+.token-wrapper .drag-handle {
+    display: none;
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 2px;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.token-wrapper:hover .drag-handle {
+    display: block;
+}
+
+@media (max-width: 600px) {
+    .token-wrapper .drag-handle {
+        display: block;
+        font-size: 0.5rem;
+        color: rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Drag ghost image */
+.token-drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999998;
+    opacity: 0.85;
+    -webkit-transform: rotate(-5deg) scale(1.05);
+    transform: rotate(-5deg) scale(1.05);
+    -webkit-box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    width: 150px;
+    height: 210px;
+    overflow: hidden;
+}
+
+/* Reorder indicator */
+.reorder-indicator {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+    width: 100%;
+    padding: 8px;
+    color: #f59e0b;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    opacity: 0.5;
+    pointer-events: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* ============================================================
+   EDIT MODE TOGGLE
+   ============================================================ */
+
+.btn-edit {
+    background: #2a2a2a;
+    border: 2px solid #444;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btn-edit.active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #000;
+}
+
+.btn-edit:active {
+    transform: scale(0.95);
+}
+
+/* Edit mode styles */
+.edit-mode .token-card {
+    cursor: grab !important;
+}
+
+.edit-mode .token-card:active {
+    cursor: grabbing !important;
+}
+
+.edit-mode .token-card .btn-sm,
+.edit-mode .token-card .btn-tap,
+.edit-mode .token-card .btn-delete {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.edit-mode .token-wrapper {
+    border: 2px dashed transparent;
+    transition: all 0.2s ease;
+}
+
+.edit-mode .token-wrapper.drag-over {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 10px;
+}
+
+.edit-mode .token-wrapper.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.edit-mode .drag-handle {
+    display: block !important;
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 2px;
+    z-index: 20;
+    pointer-events: none;
+    background: rgba(0,0,0,0.5);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.edit-mode .token-wrapper .drag-handle {
+    display: block !important;
+}
+
+/* Drag ghost */
+.drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999998;
+    opacity: 0.85;
+    transform: rotate(-5deg) scale(1.05);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    border-radius: 10px;
+    width: 150px;
+    height: 210px;
+    overflow: hidden;
+}
+
+/* Swap animation */
+.token-wrapper.swapping {
+    animation: swapPulse 0.3s ease;
+}
+
+@keyframes swapPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}

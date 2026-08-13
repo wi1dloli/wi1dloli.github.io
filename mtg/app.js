@@ -1,6 +1,6 @@
 // ============================================================
 // WI1DTRACK - MTG GAME TRACKER
-// iOS 9.3.5 Compatible - WITH MODAL
+// iOS 9.3.5 Compatible - WITH EDIT MODE
 // ============================================================
 
 var STORAGE_KEY = 'mtg_state';
@@ -115,6 +115,32 @@ function adjustLife(amount) {
     state.lifeTotal += amount;
     saveToStorage();
     render();
+}
+
+// ============================================================
+// FAST LIFE ADJUSTMENT - PRESS AND HOLD
+// ============================================================
+
+var lifeHoldInterval = null;
+var lifeHoldTimeout = null;
+
+function startLifeHold(amount) {
+    clearInterval(lifeHoldInterval);
+    clearTimeout(lifeHoldTimeout);
+    
+    lifeHoldTimeout = setTimeout(function() {
+        adjustLife(amount);
+        lifeHoldInterval = setInterval(function() {
+            adjustLife(amount);
+        }, 100);
+    }, 200);
+}
+
+function stopLifeHold() {
+    clearInterval(lifeHoldInterval);
+    clearTimeout(lifeHoldTimeout);
+    lifeHoldInterval = null;
+    lifeHoldTimeout = null;
 }
 
 // ============================================================
@@ -758,32 +784,6 @@ function getTokenColor(token) {
 }
 
 // ============================================================
-// FAST LIFE ADJUSTMENT - PRESS AND HOLD
-// ============================================================
-
-var lifeHoldInterval = null;
-var lifeHoldTimeout = null;
-
-function startLifeHold(amount) {
-    clearInterval(lifeHoldInterval);
-    clearTimeout(lifeHoldTimeout);
-    
-    lifeHoldTimeout = setTimeout(function() {
-        adjustLife(amount);
-        lifeHoldInterval = setInterval(function() {
-            adjustLife(amount);
-        }, 100);
-    }, 200);
-}
-
-function stopLifeHold() {
-    clearInterval(lifeHoldInterval);
-    clearTimeout(lifeHoldTimeout);
-    lifeHoldInterval = null;
-    lifeHoldTimeout = null;
-}
-
-// ============================================================
 // TOKEN MODAL - Enlarged View
 // ============================================================
 
@@ -892,6 +892,7 @@ function render() {
     state.tokens.forEach(function(token) {
         var wrapper = document.createElement('div');
         wrapper.className = 'token-wrapper';
+        wrapper.dataset.tokenId = token.id;  // <-- ADD THIS!
         
         var card = document.createElement('div');
 
@@ -984,9 +985,12 @@ function render() {
             if (e.target.closest('button')) {
                 return;
             }
+            // Don't open modal if in edit mode
+            if (isEditMode) {
+                return;
+            }
             openTokenModal(token.id);
         });
-
         wrapper.appendChild(card);
         grid.appendChild(wrapper);
     });
@@ -1101,6 +1105,363 @@ function handleNameKeydown(event) {
 }
 
 // ============================================================
+// EDIT MODE - DRAG AND DROP
+// ============================================================
+
+var isEditMode = false;
+var dragData = null;
+var dragGhost = null;
+
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    var btn = document.getElementById('edit-toggle');
+    var grid = document.getElementById('token-grid');
+    
+    if (isEditMode) {
+        btn.textContent = '🔒 Done';
+        btn.classList.add('active');
+        grid.classList.add('edit-mode');
+        enableDragOnCards();
+    } else {
+        btn.textContent = '🔀 Edit';
+        btn.classList.remove('active');
+        grid.classList.remove('edit-mode');
+        disableDragOnCards();
+        clearDragSelection();
+    }
+}
+
+function enableDragOnCards() {
+    var wrappers = document.querySelectorAll('.token-wrapper');
+    wrappers.forEach(function(wrapper) {
+        var card = wrapper.querySelector('.token-card');
+        if (!card) return;
+        
+        var tokenId = wrapper.dataset.tokenId;
+        if (!tokenId) return;
+        
+        // Make draggable
+        card.draggable = true;
+        card.setAttribute('data-token-id', tokenId);
+        
+        // Add drag handle
+        var handle = wrapper.querySelector('.drag-handle');
+        if (!handle) {
+            handle = document.createElement('div');
+            handle.className = 'drag-handle';
+            handle.textContent = '⋮⋮';
+            wrapper.appendChild(handle);
+        }
+        
+        // Add drag events (don't remove existing ones)
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+        
+        // Add a class to indicate edit mode is active
+        card.classList.add('edit-mode-active');
+    });
+}
+
+function disableDragOnCards() {
+    var wrappers = document.querySelectorAll('.token-wrapper');
+    wrappers.forEach(function(wrapper) {
+        var card = wrapper.querySelector('.token-card');
+        if (card) {
+            card.draggable = false;
+            card.removeAttribute('data-token-id');
+            card.classList.remove('edit-mode-active');
+            
+            // Remove drag handle
+            var handle = wrapper.querySelector('.drag-handle');
+            if (handle) handle.remove();
+        }
+    });
+}
+
+function handleDragStart(e) {
+    var card = e.target.closest('.token-card');
+    if (!card) return;
+    
+    var wrapper = card.closest('.token-wrapper');
+    if (!wrapper) return;
+    
+    var tokenId = wrapper.dataset.tokenId;
+    if (!tokenId) return;
+    
+    dragData = {
+        id: tokenId,
+        wrapper: wrapper
+    };
+    
+    wrapper.classList.add('dragging');
+    
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tokenId);
+    
+    var ghost = card.cloneNode(true);
+    ghost.className = 'drag-ghost';
+    var token = state.tokens.find(function(t) { return t.id === tokenId; });
+    if (token) {
+        ghost.style.backgroundColor = getTokenColor(token).bg || '#1a1a2e';
+        if (token.artUrl) {
+            ghost.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
+            ghost.style.backgroundSize = 'cover';
+            ghost.style.backgroundPosition = 'center';
+        }
+    }
+    
+    document.body.appendChild(ghost);
+    dragGhost = ghost;
+    e.dataTransfer.setDragImage(ghost, 75, 105);
+    
+    setTimeout(function() {
+        if (ghost.parentNode) {
+            ghost.style.display = 'none';
+        }
+    }, 0);
+}
+
+function handleDragEnd(e) {
+    if (dragGhost && dragGhost.parentNode) {
+        dragGhost.parentNode.removeChild(dragGhost);
+        dragGhost = null;
+    }
+    
+    document.querySelectorAll('.token-wrapper.drag-over').forEach(function(el) {
+        el.classList.remove('drag-over');
+    });
+    
+    document.querySelectorAll('.token-wrapper.dragging').forEach(function(el) {
+        el.classList.remove('dragging');
+    });
+    
+    dragData = null;
+}
+
+function initDragEvents() {
+    var grid = document.getElementById('token-grid');
+    if (!grid) return;
+    
+    grid.addEventListener('dragover', function(e) {
+        if (!isEditMode) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        var targetWrapper = e.target.closest('.token-wrapper');
+        if (targetWrapper && targetWrapper !== dragData?.wrapper) {
+            targetWrapper.classList.add('drag-over');
+        }
+    });
+    
+    grid.addEventListener('dragleave', function(e) {
+        var targetWrapper = e.target.closest('.token-wrapper');
+        if (targetWrapper) {
+            targetWrapper.classList.remove('drag-over');
+        }
+    });
+    
+    grid.addEventListener('drop', function(e) {
+        e.preventDefault();
+        
+        if (!isEditMode || !dragData) return;
+        
+        var targetWrapper = e.target.closest('.token-wrapper');
+        if (!targetWrapper) return;
+        
+        var targetId = targetWrapper.dataset.tokenId;
+        var sourceId = dragData.id;
+        
+        if (!targetId || !sourceId || sourceId === targetId) {
+            clearDragSelection();
+            return;
+        }
+        
+        var sourceIndex = state.tokens.findIndex(function(t) {
+            return t.id === sourceId;
+        });
+        var targetIndex = state.tokens.findIndex(function(t) {
+            return t.id === targetId;
+        });
+        
+        if (sourceIndex !== -1 && targetIndex !== -1) {
+            var temp = state.tokens[sourceIndex];
+            state.tokens[sourceIndex] = state.tokens[targetIndex];
+            state.tokens[targetIndex] = temp;
+            
+            saveToStorage();
+            clearDragSelection();
+            render();
+            
+            setTimeout(function() {
+                if (isEditMode) enableDragOnCards();
+            }, 100);
+        }
+    });
+}
+
+function clearDragSelection() {
+    document.querySelectorAll('.token-wrapper.drag-over').forEach(function(el) {
+        el.classList.remove('drag-over');
+    });
+    document.querySelectorAll('.token-wrapper.dragging').forEach(function(el) {
+        el.classList.remove('dragging');
+    });
+    dragData = null;
+}
+
+var touchDragData = null;
+var touchGhost = null;
+var touchStartX = 0;
+var touchStartY = 0;
+
+function initTouchDragEdit() {
+    var grid = document.getElementById('token-grid');
+    if (!grid) return;
+    
+    grid.addEventListener('touchstart', function(e) {
+        if (!isEditMode) return;
+        if (e.target.closest('button')) return;
+        
+        var card = e.target.closest('.token-card');
+        if (!card) return;
+        
+        var wrapper = card.closest('.token-wrapper');
+        if (!wrapper) return;
+        
+        var tokenId = wrapper.dataset.tokenId;
+        if (!tokenId) return;
+        
+        var touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        
+        touchDragData = {
+            id: tokenId,
+            wrapper: wrapper,
+            card: card,
+            isDragging: false
+        };
+    }, { passive: true });
+    
+    grid.addEventListener('touchmove', function(e) {
+        if (!touchDragData || !isEditMode) return;
+        
+        var touch = e.touches[0];
+        var dx = touch.clientX - touchStartX;
+        var dy = touch.clientY - touchStartY;
+        
+        if (!touchDragData.isDragging && (Math.abs(dx) > 15 || Math.abs(dy) > 15)) {
+            touchDragData.isDragging = true;
+            
+            var card = touchDragData.card;
+            touchGhost = card.cloneNode(true);
+            touchGhost.className = 'drag-ghost';
+            touchGhost.style.position = 'fixed';
+            touchGhost.style.pointerEvents = 'none';
+            touchGhost.style.zIndex = '9999998';
+            touchGhost.style.opacity = '0.85';
+            touchGhost.style.transform = 'rotate(-5deg) scale(1.05)';
+            touchGhost.style.boxShadow = '0 20px 60px rgba(0,0,0,0.7)';
+            
+            var token = state.tokens.find(function(t) {
+                return t.id === touchDragData.id;
+            });
+            if (token) {
+                touchGhost.style.backgroundColor = getTokenColor(token).bg || '#1a1a2e';
+                if (token.artUrl) {
+                    touchGhost.style.backgroundImage = 'url(' + JSON.stringify(token.artUrl) + ')';
+                    touchGhost.style.backgroundSize = 'cover';
+                    touchGhost.style.backgroundPosition = 'center';
+                }
+            }
+            
+            document.body.appendChild(touchGhost);
+        }
+        
+        if (touchDragData.isDragging) {
+            e.preventDefault();
+            
+            if (touchGhost) {
+                touchGhost.style.left = (touch.clientX - 75) + 'px';
+                touchGhost.style.top = (touch.clientY - 105) + 'px';
+            }
+            
+            var elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+            var targetWrapper = null;
+            for (var i = 0; i < elements.length; i++) {
+                var el = elements[i];
+                if (el.classList && el.classList.contains('token-wrapper')) {
+                    targetWrapper = el;
+                    break;
+                }
+            }
+            
+            document.querySelectorAll('.token-wrapper.drag-over').forEach(function(el) {
+                el.classList.remove('drag-over');
+            });
+            
+            if (targetWrapper && targetWrapper !== touchDragData.wrapper) {
+                targetWrapper.classList.add('drag-over');
+            }
+        }
+    }, { passive: false });
+    
+    grid.addEventListener('touchend', function(e) {
+        if (!touchDragData) return;
+        
+        if (touchGhost && touchGhost.parentNode) {
+            touchGhost.parentNode.removeChild(touchGhost);
+            touchGhost = null;
+        }
+        
+        if (touchDragData.isDragging && isEditMode) {
+            var touch = e.changedTouches[0];
+            var elements = document.elementsFromPoint(touch.clientX, touch.clientY);
+            var targetWrapper = null;
+            var targetId = null;
+            
+            for (var i = 0; i < elements.length; i++) {
+                var el = elements[i];
+                if (el.classList && el.classList.contains('token-wrapper')) {
+                    targetWrapper = el;
+                    targetId = el.dataset.tokenId;
+                    break;
+                }
+            }
+            
+            document.querySelectorAll('.token-wrapper.drag-over').forEach(function(el) {
+                el.classList.remove('drag-over');
+            });
+            
+            var sourceId = touchDragData.id;
+            if (targetId && sourceId !== targetId) {
+                var sourceIndex = state.tokens.findIndex(function(t) {
+                    return t.id === sourceId;
+                });
+                var targetIndex = state.tokens.findIndex(function(t) {
+                    return t.id === targetId;
+                });
+                
+                if (sourceIndex !== -1 && targetIndex !== -1) {
+                    var temp = state.tokens[sourceIndex];
+                    state.tokens[sourceIndex] = state.tokens[targetIndex];
+                    state.tokens[targetIndex] = temp;
+                    
+                    saveToStorage();
+                    render();
+                    
+                    setTimeout(function() {
+                        if (isEditMode) enableDragOnCards();
+                    }, 100);
+                }
+            }
+        }
+        
+        touchDragData = null;
+    }, { passive: true });
+}
+
+// ============================================================
 // INITIALIZATION
 // ============================================================
 
@@ -1117,6 +1478,10 @@ function initializeApp() {
     }
 
     document.addEventListener('click', handleDocumentClick);
+
+    // Initialize drag events
+    initDragEvents();
+    initTouchDragEdit();
 
     render();
 }

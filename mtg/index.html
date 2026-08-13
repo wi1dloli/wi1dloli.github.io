@@ -95,8 +95,10 @@
                     <button type="submit" class="btn btn-primary">Add Tokens</button>
                 </form>
             </div>
-
-            <h2>Active Tokens</h2>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h2 style="margin:0;">Active Tokens</h2>
+                <button id="edit-toggle" class="btn-edit" onclick="toggleEditMode()">🔀 Edit</button>
+            </div>
             <div id="token-grid" class="token-grid"></div>
 
             <!-- Token Detail Modal -->
