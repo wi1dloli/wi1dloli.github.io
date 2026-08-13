@@ -1,4 +1,4 @@
-# **wi1dloli.github.io**
+# **wi1dloxi.github.io**
 ## Weebsite
 
 Welcome to My Page lol I don't know what I'm doing but I hope you like it!
